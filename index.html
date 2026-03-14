@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cross-Validation Explainer</title>
+<title>MGMT E-104 · Interactive Tools</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -11,20 +11,14 @@
     --color-background-primary: #ffffff;
     --color-background-secondary: #f5f5f4;
     --color-background-info: #e6f1fb;
-    --color-background-success: #eaf3de;
-    --color-background-warning: #faeeda;
     --color-text-primary: #1a1a18;
     --color-text-secondary: #5f5e5a;
     --color-text-tertiary: #888780;
     --color-text-info: #185fa5;
-    --color-text-success: #3b6d11;
-    --color-text-warning: #854f0b;
     --color-border-primary: rgba(0,0,0,0.4);
     --color-border-secondary: rgba(0,0,0,0.3);
     --color-border-tertiary: rgba(0,0,0,0.15);
     --color-border-info: #b5d4f4;
-    --color-border-success: #c0dd97;
-    --color-border-warning: #fac775;
     --border-radius-md: 8px;
     --border-radius-lg: 12px;
     --font-sans: system-ui, -apple-system, sans-serif;
@@ -35,20 +29,14 @@
       --color-background-primary: #1c1c1a;
       --color-background-secondary: #2c2c2a;
       --color-background-info: #042c53;
-      --color-background-success: #173404;
-      --color-background-warning: #412402;
       --color-text-primary: #e8e6df;
       --color-text-secondary: #b4b2a9;
       --color-text-tertiary: #888780;
       --color-text-info: #85b7eb;
-      --color-text-success: #97c459;
-      --color-text-warning: #ef9f27;
       --color-border-primary: rgba(255,255,255,0.4);
       --color-border-secondary: rgba(255,255,255,0.3);
       --color-border-tertiary: rgba(255,255,255,0.15);
       --color-border-info: #0c447c;
-      --color-border-success: #27500a;
-      --color-border-warning: #633806;
     }
   }
 
@@ -57,309 +45,202 @@
     background: var(--color-background-secondary);
     color: var(--color-text-primary);
     min-height: 100vh;
-    padding: 32px 24px;
+    padding: 48px 24px;
   }
 
   .container {
-    max-width: 720px;
+    max-width: 680px;
     margin: 0 auto;
-    background: var(--color-background-primary);
-    border-radius: var(--border-radius-lg);
-    border: 0.5px solid var(--color-border-tertiary);
-    padding: 28px 32px;
+  }
+
+  header {
+    margin-bottom: 40px;
+  }
+
+  .course-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-text-tertiary);
+    margin-bottom: 10px;
   }
 
   h1 {
-    font-size: 18px;
-    font-weight: 500;
+    font-size: 22px;
+    font-weight: 600;
     color: var(--color-text-primary);
     margin-bottom: 6px;
+    letter-spacing: -0.01em;
   }
 
   .subtitle {
-    font-size: 13px;
+    font-size: 14px;
     color: var(--color-text-secondary);
-    margin-bottom: 24px;
+    line-height: 1.5;
   }
 
-  .cv-tabs { display: flex; gap: 6px; margin-bottom: 20px; }
-  .cv-tab {
-    padding: 7px 16px;
-    border-radius: var(--border-radius-md);
-    border: 0.5px solid var(--color-border-secondary);
-    background: var(--color-background-secondary);
-    cursor: pointer;
-    font-size: 13px;
-    color: var(--color-text-secondary);
-    font-family: var(--font-sans);
-    transition: all .15s;
+  /* ── WEEK GROUPS ── */
+  .week-group {
+    margin-bottom: 28px;
   }
-  .cv-tab.active {
-    background: var(--color-background-primary);
-    color: var(--color-text-primary);
-    border-color: var(--color-border-primary);
+
+  .week-label {
+    font-size: 11px;
     font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-text-tertiary);
+    margin-bottom: 8px;
+    padding-left: 2px;
   }
-  .cv-panel { display: none; }
-  .cv-panel.active { display: block; }
 
-  .cv-label { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 4px; }
-  .cv-stat {
-    background: var(--color-background-secondary);
+  /* ── TOOL CARD ── */
+  .tool-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: var(--color-background-primary);
+    border: 0.5px solid var(--color-border-tertiary);
     border-radius: var(--border-radius-md);
-    padding: 10px 14px;
+    padding: 16px 18px;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    margin-bottom: 6px;
   }
-  .cv-stat-val { font-size: 22px; font-weight: 500; }
-  .cv-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 16px; }
 
-  .cv-insight {
-    margin-top: 16px;
-    padding: 12px 14px;
-    border-left: 2px solid var(--color-border-info);
+  .tool-card:hover {
+    border-color: var(--color-border-secondary);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+
+  .tool-card.coming-soon {
+    opacity: 0.45;
+    pointer-events: none;
+    cursor: default;
+  }
+
+  .tool-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
     background: var(--color-background-info);
-    border-radius: 0 var(--border-radius-md) var(--border-radius-md) 0;
-    font-size: 13px;
-    color: var(--color-text-secondary);
-    line-height: 1.6;
-  }
-
-  .fold-row { display: flex; gap: 3px; align-items: center; margin-bottom: 4px; }
-  .fold-cell {
-    height: 28px;
-    border-radius: 3px;
+    border: 0.5px solid var(--color-border-info);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 11px;
-    font-weight: 500;
-    transition: all .3s;
-    flex: 1;
-  }
-  .fold-train {
-    background: var(--color-background-success);
-    color: var(--color-text-success);
-    border: 0.5px solid var(--color-border-success);
-  }
-  .fold-test {
-    background: var(--color-background-warning);
-    color: var(--color-text-warning);
-    border: 0.5px solid var(--color-border-warning);
-  }
-  .fold-label {
-    width: 68px;
     flex-shrink: 0;
+    font-size: 17px;
+  }
+
+  .tool-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .tool-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    margin-bottom: 2px;
+  }
+
+  .tool-desc {
     font-size: 12px;
     color: var(--color-text-secondary);
-    text-align: right;
-    padding-right: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-  .fold-area { flex: 1; display: flex; gap: 3px; }
 
-  .legend { display: flex; gap: 16px; margin: 10px 0 16px; font-size: 12px; color: var(--color-text-secondary); }
-  .legend-dot { width: 12px; height: 12px; border-radius: 2px; display: inline-block; margin-right: 5px; vertical-align: middle; }
-  .dot-train { background: var(--color-background-success); border: 0.5px solid var(--color-border-success); }
-  .dot-test  { background: var(--color-background-warning); border: 0.5px solid var(--color-border-warning); }
+  .tool-arrow {
+    font-size: 16px;
+    color: var(--color-text-tertiary);
+    flex-shrink: 0;
+  }
 
-  .slider-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
-  .slider-row label { font-size: 13px; color: var(--color-text-secondary); width: 130px; flex-shrink: 0; }
-  .slider-row input[type=range] { flex: 1; accent-color: var(--color-text-info); }
-  .slider-row span { font-size: 13px; font-weight: 500; min-width: 32px; text-align: right; }
-
-  .highlight-row { background: var(--color-background-info); border-radius: 4px; }
-
-  .animate-btn {
-    margin-top: 12px;
-    padding: 7px 18px;
-    border-radius: var(--border-radius-md);
-    border: 0.5px solid var(--color-border-secondary);
+  .coming-badge {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-text-tertiary);
     background: var(--color-background-secondary);
-    cursor: pointer;
-    font-size: 13px;
-    font-family: var(--font-sans);
-    color: var(--color-text-primary);
-    transition: background .15s;
-  }
-  .animate-btn:hover { background: var(--color-background-primary); border-color: var(--color-border-primary); }
-
-  .loocv-grid { display: flex; flex-wrap: wrap; gap: 5px; margin: 12px 0; }
-  .obs {
-    width: 30px; height: 30px;
+    border: 0.5px solid var(--color-border-tertiary);
+    padding: 3px 8px;
     border-radius: 4px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 11px; font-weight: 500;
-    border: 0.5px solid var(--color-border-secondary);
-    transition: all .25s;
+    flex-shrink: 0;
   }
-  .obs-train { background: var(--color-background-success); color: var(--color-text-success); border-color: var(--color-border-success); }
-  .obs-test  { background: var(--color-background-warning); color: var(--color-text-warning); border-color: var(--color-border-warning); transform: scale(1.15); }
-  .obs-done  { background: var(--color-background-secondary); color: var(--color-text-tertiary); }
 
-  .dot-done { width: 12px; height: 12px; border-radius: 2px; display: inline-block; margin-right: 5px; vertical-align: middle; background: var(--color-background-secondary); border: 0.5px solid var(--color-border-secondary); }
+  footer {
+    margin-top: 48px;
+    padding-top: 20px;
+    border-top: 0.5px solid var(--color-border-tertiary);
+    font-size: 12px;
+    color: var(--color-text-tertiary);
+  }
 </style>
 </head>
 <body>
 <div class="container">
-  <h1>Cross-Validation — Interactive Explainer</h1>
-  <p class="subtitle">MGMT E-104 · Review Section 7 · Cross-Validation &amp; Multicollinearity</p>
 
-  <div class="cv-tabs">
-    <button class="cv-tab active" onclick="showTab('two')">2-fold</button>
-    <button class="cv-tab" onclick="showTab('ten')">10-fold</button>
-    <button class="cv-tab" onclick="showTab('loo')">Leave-one-out</button>
+  <header>
+    <div class="course-label">MGMT E-104 · Harvard Extension School</div>
+    <h1>Interactive Course Tools</h1>
+    <p class="subtitle">Visual explainers and simulators to accompany each week's material. New tools are added throughout the term.</p>
+  </header>
+
+  <!-- WEEK 5 -->
+  <div class="week-group">
+    <div class="week-label">Week 5 · Feb 25</div>
+    <a class="tool-card" href="cross_validation_explainer.html">
+      <div class="tool-icon">🔁</div>
+      <div class="tool-info">
+        <div class="tool-name">Cross-Validation Explainer</div>
+        <div class="tool-desc">2-fold, k-fold, and leave-one-out cross-validation — interactive step-through</div>
+      </div>
+      <div class="tool-arrow">›</div>
+    </a>
   </div>
 
-  <!-- 2-FOLD -->
-  <div class="cv-panel active" id="panel-two">
-    <div class="legend">
-      <span><span class="legend-dot dot-train"></span>Training</span>
-      <span><span class="legend-dot dot-test"></span>Test (held out)</span>
+  <!-- COMING SOON placeholders -->
+  <div class="week-group">
+    <div class="week-label">Coming Soon</div>
+
+    <div class="tool-card coming-soon">
+      <div class="tool-icon">📈</div>
+      <div class="tool-info">
+        <div class="tool-name">Regression Explorer</div>
+        <div class="tool-desc">Simple and multiple linear regression, residuals, R²</div>
+      </div>
+      <div class="coming-badge">Soon</div>
     </div>
-    <div id="folds-two"></div>
-    <div class="cv-stats">
-      <div class="cv-stat"><div class="cv-label">Folds</div><div class="cv-stat-val">2</div></div>
-      <div class="cv-stat"><div class="cv-label">Train size</div><div class="cv-stat-val">50%</div></div>
-      <div class="cv-stat"><div class="cv-label">Test size</div><div class="cv-stat-val">50%</div></div>
+
+    <div class="tool-card coming-soon">
+      <div class="tool-icon">🔔</div>
+      <div class="tool-info">
+        <div class="tool-name">Normal Distribution Visualizer</div>
+        <div class="tool-desc">Mean, standard deviation, z-scores, and area under the curve</div>
+      </div>
+      <div class="coming-badge">Soon</div>
     </div>
-    <div class="cv-insight">Fast but each model sees only half the data — estimates are noisier. Use for quick sanity checks or very large datasets where speed matters.</div>
-    <button class="animate-btn" onclick="animateFolds('two', 2)">Step through folds ›</button>
+
+    <div class="tool-card coming-soon">
+      <div class="tool-icon">💼</div>
+      <div class="tool-info">
+        <div class="tool-name">Portfolio & CAPM Simulator</div>
+        <div class="tool-desc">Two-asset portfolio, efficient frontier, and the Capital Asset Pricing Model</div>
+      </div>
+      <div class="coming-badge">Soon</div>
+    </div>
+
   </div>
 
-  <!-- 10-FOLD -->
-  <div class="cv-panel" id="panel-ten">
-    <div class="slider-row">
-      <label>Number of folds (k)</label>
-      <input type="range" min="2" max="20" value="10" step="1" id="k-slider" oninput="updateK(this.value)">
-      <span id="k-val">10</span>
-    </div>
-    <div class="legend">
-      <span><span class="legend-dot dot-train"></span>Training</span>
-      <span><span class="legend-dot dot-test"></span>Test (held out)</span>
-    </div>
-    <div id="folds-ten"></div>
-    <div class="cv-stats">
-      <div class="cv-stat"><div class="cv-label">Folds (k)</div><div class="cv-stat-val" id="k-stat">10</div></div>
-      <div class="cv-stat"><div class="cv-label">Train size</div><div class="cv-stat-val" id="train-stat">90%</div></div>
-      <div class="cv-stat"><div class="cv-label">Test size</div><div class="cv-stat-val" id="test-stat">10%</div></div>
-    </div>
-    <div class="cv-insight" id="k-insight">The standard default. At k=10, each model trains on 90% of the data — close to the full dataset. Good bias-variance balance.</div>
-    <button class="animate-btn" onclick="animateFolds('ten', parseInt(document.getElementById('k-slider').value))">Step through folds ›</button>
-  </div>
+  <footer>
+    MGMT E-104 · Spring 2025 · Add new tools by dropping an HTML file here and linking it from this page.
+  </footer>
 
-  <!-- LOOCV -->
-  <div class="cv-panel" id="panel-loo">
-    <div class="slider-row">
-      <label>Dataset size (N)</label>
-      <input type="range" min="5" max="30" value="15" step="1" id="n-slider" oninput="updateN(this.value)">
-      <span id="n-val">15</span>
-    </div>
-    <div class="legend">
-      <span><span class="legend-dot dot-train"></span>Training</span>
-      <span><span class="legend-dot dot-test"></span>Test (left out)</span>
-      <span><span class="dot-done"></span>Already tested</span>
-    </div>
-    <div class="loocv-grid" id="loo-grid"></div>
-    <div class="cv-stats">
-      <div class="cv-stat"><div class="cv-label">Iterations</div><div class="cv-stat-val" id="loo-n">15</div></div>
-      <div class="cv-stat"><div class="cv-label">Train size</div><div class="cv-stat-val" id="loo-train">93%</div></div>
-      <div class="cv-stat"><div class="cv-label">Compute cost</div><div class="cv-stat-val" id="loo-cost">High</div></div>
-    </div>
-    <div class="cv-insight" id="loo-insight">Trains N separate models — near-zero bias in the error estimate, but very expensive. Best for small datasets where every observation matters.</div>
-    <button class="animate-btn" onclick="animateLoo()">Run LOOCV ›</button>
-  </div>
 </div>
-
-<script>
-function showTab(id) {
-  document.querySelectorAll('.cv-tab').forEach((t, i) => t.classList.toggle('active', ['two','ten','loo'][i] === id));
-  document.querySelectorAll('.cv-panel').forEach(p => p.classList.remove('active'));
-  document.getElementById('panel-' + id).classList.add('active');
-}
-
-function renderFolds(containerId, k, highlightRow) {
-  const el = document.getElementById('folds-' + containerId);
-  let html = '';
-  for (let i = 0; i < k; i++) {
-    const isHl = i === highlightRow;
-    html += `<div class="fold-row${isHl ? ' highlight-row' : ''}">`;
-    html += `<div class="fold-label">Fold ${i + 1}</div>`;
-    html += `<div class="fold-area">`;
-    for (let j = 0; j < k; j++) {
-      const isTest = j === i;
-      html += `<div class="fold-cell ${isTest ? 'fold-test' : 'fold-train'}" style="flex:1">${isTest ? 'T' : ''}</div>`;
-    }
-    html += '</div></div>';
-  }
-  el.innerHTML = html;
-}
-
-renderFolds('two', 2, -1);
-renderFolds('ten', 10, -1);
-
-const animTimers = {};
-function animateFolds(id, k) {
-  clearInterval(animTimers[id]);
-  let row = -1;
-  renderFolds(id, k, -1);
-  animTimers[id] = setInterval(() => {
-    row++;
-    if (row >= k) { clearInterval(animTimers[id]); renderFolds(id, k, -1); return; }
-    renderFolds(id, k, row);
-  }, 600);
-}
-
-function updateK(v) {
-  v = parseInt(v);
-  document.getElementById('k-val').textContent = v;
-  document.getElementById('k-stat').textContent = v;
-  document.getElementById('train-stat').textContent = Math.round((v - 1) / v * 100) + '%';
-  document.getElementById('test-stat').textContent = Math.round(1 / v * 100) + '%';
-  const insights = {
-    2:  'At k=2, each model trains on only 50% of the data — quick but high variance in the error estimate.',
-    5:  'At k=5, training size is 80%. A reasonable compromise, sometimes used in practice.',
-    10: 'The standard default. At k=10, each model trains on 90% of the data — good bias-variance balance.',
-    20: 'At k=20, training size is 95%, very close to LOOCV. More accurate but noticeably slower.'
-  };
-  const closest = [2, 5, 10, 20].reduce((a, b) => Math.abs(b - v) < Math.abs(a - v) ? b : a);
-  document.getElementById('k-insight').textContent = insights[closest] || `At k=${v}, training size is ${Math.round((v - 1) / v * 100)}%.`;
-  renderFolds('ten', v, -1);
-}
-
-function updateN(v) {
-  v = parseInt(v);
-  document.getElementById('n-val').textContent = v;
-  document.getElementById('loo-n').textContent = v;
-  document.getElementById('loo-train').textContent = Math.round((v - 1) / v * 100) + '%';
-  document.getElementById('loo-cost').textContent = v <= 10 ? 'Moderate' : v <= 20 ? 'High' : 'Very high';
-  document.getElementById('loo-insight').textContent = `With N=${v}, the model is fitted ${v} times. Each iteration holds out exactly 1 observation as the test point — near-zero bias, but ${v} full model fits.`;
-  renderLoo(v, -1);
-}
-
-function renderLoo(n, testIdx) {
-  const grid = document.getElementById('loo-grid');
-  let html = '';
-  for (let i = 0; i < n; i++) {
-    let cls = 'obs-train';
-    if (i === testIdx) cls = 'obs-test';
-    else if (testIdx >= 0 && i < testIdx) cls = 'obs-done';
-    html += `<div class="obs ${cls}">${i + 1}</div>`;
-  }
-  grid.innerHTML = html;
-}
-
-renderLoo(15, -1);
-
-let looTimer;
-function animateLoo() {
-  clearInterval(looTimer);
-  const n = parseInt(document.getElementById('n-slider').value);
-  let i = -1;
-  renderLoo(n, -1);
-  looTimer = setInterval(() => {
-    i++;
-    if (i >= n) { clearInterval(looTimer); renderLoo(n, -1); return; }
-    renderLoo(n, i);
-  }, 350);
-}
-</script>
 </body>
 </html>
