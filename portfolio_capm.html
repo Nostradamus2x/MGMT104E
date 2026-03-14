@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portfolio & CAPM Simulator</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --color-background-primary: #ffffff;
+    --color-background-secondary: #f5f5f4;
+    --color-background-info: #e6f1fb;
+    --color-background-success: #eaf3de;
+    --color-background-warning: #faeeda;
+    --color-text-primary: #1a1a18;
+    --color-text-secondary: #5f5e5a;
+    --color-text-tertiary: #888780;
+    --color-text-info: #185fa5;
+    --color-text-success: #3b6d11;
+    --color-text-warning: #854f0b;
+    --color-border-primary: rgba(0,0,0,0.4);
+    --color-border-secondary: rgba(0,0,0,0.3);
+    --color-border-tertiary: rgba(0,0,0,0.15);
+    --color-border-info: #b5d4f4;
+    --color-border-success: #c0dd97;
+    --color-border-warning: #fac775;
+    --border-radius-md: 8px;
+    --border-radius-lg: 12px;
+    --font-sans: system-ui, -apple-system, sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-background-primary: #1c1c1a;
+      --color-background-secondary: #2c2c2a;
+      --color-background-info: #042c53;
+      --color-background-success: #173404;
+      --color-background-warning: #412402;
+      --color-text-primary: #e8e6df;
+      --color-text-secondary: #b4b2a9;
+      --color-text-tertiary: #888780;
+      --color-text-info: #85b7eb;
+      --color-text-success: #97c459;
+      --color-text-warning: #ef9f27;
+      --color-border-primary: rgba(255,255,255,0.4);
+      --color-border-secondary: rgba(255,255,255,0.3);
+      --color-border-tertiary: rgba(255,255,255,0.15);
+      --color-border-info: #0c447c;
+      --color-border-success: #27500a;
+      --color-border-warning: #633806;
+    }
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background: var(--color-background-secondary);
+    color: var(--color-text-primary);
+    min-height: 100vh;
+    padding: 32px 24px;
+  }
+
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+    background: var(--color-background-primary);
+    border-radius: var(--border-radius-lg);
+    border: 0.5px solid var(--color-border-tertiary);
+    padding: 28px 32px;
+  }
+
+  .back-link {
+    font-size: 12px; color: var(--color-text-tertiary); text-decoration: none;
+    display: inline-flex; align-items: center; gap: 4px; margin-bottom: 20px;
+    transition: color 0.15s;
+  }
+  .back-link:hover { color: var(--color-text-primary); }
+
+  h1 { font-size: 18px; font-weight: 500; margin-bottom: 6px; }
+  .subtitle { font-size: 13px; color: var(--color-text-secondary); margin-bottom: 24px; }
+
+  .tabs { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
+  .tab {
+    padding: 7px 16px; border-radius: var(--border-radius-md);
+    border: 0.5px solid var(--color-border-secondary);
+    background: var(--color-background-secondary);
+    cursor: pointer; font-size: 13px; color: var(--color-text-secondary);
+    font-family: var(--font-sans); transition: all .15s;
+  }
+  .tab.active {
+    background: var(--color-background-primary); color: var(--color-text-primary);
+    border-color: var(--color-border-primary); font-weight: 500;
+  }
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .slider-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .slider-row label { font-size: 13px; color: var(--color-text-secondary); width: 200px; flex-shrink: 0; }
+  .slider-row input[type=range] { flex: 1; accent-color: var(--color-text-info); }
+  .slider-row span { font-size: 13px; font-weight: 500; min-width: 50px; text-align: right; }
+
+  canvas {
+    width: 100%; height: 260px; display: block;
+    border-radius: var(--border-radius-md); margin: 16px 0;
+  }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; }
+  .stat { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 10px 14px; }
+  .stat-label { font-size: 11px; color: var(--color-text-tertiary); margin-bottom: 3px; }
+  .stat-val { font-size: 18px; font-weight: 500; }
+
+  .stats-3 { grid-template-columns: repeat(3, 1fr); }
+
+  .insight {
+    padding: 12px 14px;
+    border-left: 2px solid var(--color-border-info);
+    background: var(--color-background-info);
+    border-radius: 0 var(--border-radius-md) var(--border-radius-md) 0;
+    font-size: 13px; color: var(--color-text-secondary); line-height: 1.6;
+  }
+
+  .insight.success {
+    border-left-color: var(--color-border-success);
+    background: var(--color-background-success);
+    color: var(--color-text-success);
+  }
+
+  .asset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .asset-box {
+    background: var(--color-background-secondary);
+    border-radius: var(--border-radius-md);
+    padding: 14px 16px;
+    border: 0.5px solid var(--color-border-tertiary);
+  }
+  .asset-title { font-size: 12px; font-weight: 500; color: var(--color-text-secondary); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.05em; }
+
+  .legend { display: flex; gap: 16px; margin-bottom: 8px; font-size: 12px; color: var(--color-text-secondary); flex-wrap: wrap; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 4px; vertical-align: middle; }
+
+  .weight-display {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 14px;
+  }
+  .weight-bar {
+    flex: 1; height: 8px; border-radius: 4px; overflow: hidden; background: var(--color-background-secondary);
+    display: flex;
+  }
+  .weight-a { height: 100%; background: #185fa5; transition: width 0.2s; }
+  .weight-b { height: 100%; background: #3b6d11; transition: width 0.2s; }
+  .weight-label { font-size: 12px; color: var(--color-text-secondary); min-width: 80px; text-align: right; }
+</style>
+</head>
+<body>
+<div class="container">
+  <a class="back-link" href="index.html">← All Tools</a>
+  <h1>Portfolio &amp; CAPM Simulator</h1>
+  <p class="subtitle">MGMT E-104 · Weeks 6 &amp; 12 · Portfolio Theory, Risk, Return &amp; CAPM</p>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('twoasset')">Two-Asset Portfolio</button>
+    <button class="tab" onclick="showTab('frontier')">Efficient Frontier</button>
+    <button class="tab" onclick="showTab('capm')">CAPM</button>
+  </div>
+
+  <!-- TWO-ASSET PORTFOLIO -->
+  <div class="panel active" id="panel-twoasset">
+    <div class="asset-grid">
+      <div class="asset-box">
+        <div class="asset-title" style="color:#185fa5">Asset A</div>
+        <div class="slider-row" style="margin-bottom:8px">
+          <label style="width:110px;font-size:12px">Expected Return</label>
+          <input type="range" min="1" max="20" value="8" step="0.5" id="ra" oninput="drawTwoAsset()">
+          <span id="ra-val" style="font-size:12px">8.0%</span>
+        </div>
+        <div class="slider-row">
+          <label style="width:110px;font-size:12px">Std Deviation</label>
+          <input type="range" min="1" max="30" value="10" step="0.5" id="siga" oninput="drawTwoAsset()">
+          <span id="siga-val" style="font-size:12px">10.0%</span>
+        </div>
+      </div>
+      <div class="asset-box">
+        <div class="asset-title" style="color:#3b6d11">Asset B</div>
+        <div class="slider-row" style="margin-bottom:8px">
+          <label style="width:110px;font-size:12px">Expected Return</label>
+          <input type="range" min="1" max="20" value="14" step="0.5" id="rb" oninput="drawTwoAsset()">
+          <span id="rb-val" style="font-size:12px">14.0%</span>
+        </div>
+        <div class="slider-row">
+          <label style="width:110px;font-size:12px">Std Deviation</label>
+          <input type="range" min="1" max="30" value="20" step="0.5" id="sigb" oninput="drawTwoAsset()">
+          <span id="sigb-val" style="font-size:12px">20.0%</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="slider-row">
+      <label>Correlation (ρ)</label>
+      <input type="range" min="-1" max="1" value="0.3" step="0.05" id="rho" oninput="drawTwoAsset()">
+      <span id="rho-val">0.30</span>
+    </div>
+
+    <div class="slider-row">
+      <label>Weight in A (wₐ)</label>
+      <input type="range" min="0" max="1" value="0.5" step="0.01" id="wa" oninput="drawTwoAsset()">
+      <span id="wa-val">50%</span>
+    </div>
+
+    <div class="weight-display">
+      <span style="font-size:11px;color:#185fa5;min-width:28px">A</span>
+      <div class="weight-bar">
+        <div class="weight-a" id="wbar-a" style="width:50%"></div>
+        <div class="weight-b" id="wbar-b" style="width:50%"></div>
+      </div>
+      <span style="font-size:11px;color:#3b6d11;min-width:28px;text-align:right">B</span>
+      <span class="weight-label" id="weight-label-text">50% A / 50% B</span>
+    </div>
+
+    <canvas id="canvas-twoasset"></canvas>
+
+    <div class="stats">
+      <div class="stat"><div class="stat-label">Portfolio Return</div><div class="stat-val" id="p-ret">—</div></div>
+      <div class="stat"><div class="stat-label">Portfolio σ</div><div class="stat-val" id="p-sig">—</div></div>
+      <div class="stat"><div class="stat-label">Sharpe Ratio</div><div class="stat-val" id="p-sharpe">—</div></div>
+      <div class="stat"><div class="stat-label">Min-Risk wₐ</div><div class="stat-val" id="p-minw">—</div></div>
+    </div>
+    <div class="insight" id="twoasset-insight">Adjust the weights to move along the portfolio curve. The dot shows your current allocation.</div>
+  </div>
+
+  <!-- EFFICIENT FRONTIER -->
+  <div class="panel" id="panel-frontier">
+    <div class="slider-row">
+      <label>Asset A Return</label>
+      <input type="range" min="2" max="18" value="6" step="0.5" id="f-ra" oninput="drawFrontier()">
+      <span id="f-ra-val">6.0%</span>
+    </div>
+    <div class="slider-row">
+      <label>Asset A σ</label>
+      <input type="range" min="2" max="25" value="8" step="0.5" id="f-siga" oninput="drawFrontier()">
+      <span id="f-siga-val">8.0%</span>
+    </div>
+    <div class="slider-row">
+      <label>Asset B Return</label>
+      <input type="range" min="2" max="18" value="14" step="0.5" id="f-rb" oninput="drawFrontier()">
+      <span id="f-rb-val">14.0%</span>
+    </div>
+    <div class="slider-row">
+      <label>Asset B σ</label>
+      <input type="range" min="2" max="25" value="18" step="0.5" id="f-sigb" oninput="drawFrontier()">
+      <span id="f-sigb-val">18.0%</span>
+    </div>
+    <div class="slider-row">
+      <label>Correlation (ρ)</label>
+      <input type="range" min="-0.99" max="0.99" value="0.2" step="0.05" id="f-rho" oninput="drawFrontier()">
+      <span id="f-rho-val">0.20</span>
+    </div>
+    <div class="legend">
+      <span><span class="legend-dot" style="background:#185fa5"></span>Efficient frontier</span>
+      <span><span class="legend-dot" style="background:#ef9f27"></span>Minimum variance</span>
+      <span><span class="legend-dot" style="background:#3b6d11"></span>Assets A &amp; B</span>
+    </div>
+    <canvas id="canvas-frontier"></canvas>
+    <div class="stats stats-3">
+      <div class="stat"><div class="stat-label">MVP Return</div><div class="stat-val" id="mvp-ret">—</div></div>
+      <div class="stat"><div class="stat-label">MVP σ</div><div class="stat-val" id="mvp-sig">—</div></div>
+      <div class="stat"><div class="stat-label">MVP wₐ</div><div class="stat-val" id="mvp-wa">—</div></div>
+    </div>
+    <div class="insight" id="frontier-insight">The efficient frontier shows all portfolios with maximum return for a given level of risk. Portfolios below the minimum-variance point are inefficient.</div>
+  </div>
+
+  <!-- CAPM -->
+  <div class="panel" id="panel-capm">
+    <div class="slider-row">
+      <label>Risk-Free Rate (rƒ)</label>
+      <input type="range" min="0" max="8" value="3" step="0.1" id="rf" oninput="drawCAPM()">
+      <span id="rf-val">3.0%</span>
+    </div>
+    <div class="slider-row">
+      <label>Market Return (rₘ)</label>
+      <input type="range" min="4" max="18" value="10" step="0.1" id="rm" oninput="drawCAPM()">
+      <span id="rm-val">10.0%</span>
+    </div>
+    <div class="slider-row">
+      <label>Asset Beta (β)</label>
+      <input type="range" min="-0.5" max="2.5" value="1.2" step="0.05" id="beta" oninput="drawCAPM()">
+      <span id="beta-val">1.20</span>
+    </div>
+    <canvas id="canvas-capm"></canvas>
+    <div class="stats">
+      <div class="stat"><div class="stat-label">Required Return</div><div class="stat-val" id="capm-req">—</div></div>
+      <div class="stat"><div class="stat-label">Market Premium</div><div class="stat-val" id="capm-premium">—</div></div>
+      <div class="stat"><div class="stat-label">Beta</div><div class="stat-val" id="capm-beta">—</div></div>
+      <div class="stat"><div class="stat-label">Risk Added</div><div class="stat-val" id="capm-risk">—</div></div>
+    </div>
+    <div class="insight" id="capm-insight">CAPM: E(rᵢ) = rƒ + βᵢ(rₘ − rƒ). The Security Market Line (SML) shows the required return for any level of systematic risk (β). β=1 means the asset moves exactly with the market.</div>
+  </div>
+</div>
+
+<script>
+function getColors() {
+  const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  return {
+    assetA: '#185fa5',
+    assetB: '#3b6d11',
+    curve: dark ? '#85b7eb' : '#185fa5',
+    frontier: dark ? '#85b7eb' : '#185fa5',
+    sml: dark ? '#85b7eb' : '#185fa5',
+    mvp: '#ef9f27',
+    dot: dark ? '#e8e6df' : '#1a1a18',
+    axis: dark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)',
+    text: dark ? '#888780' : '#888780',
+    grid: dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
+    capmDot: '#A51C30',
+  };
+}
+
+function setupCanvas(id) {
+  const canvas = document.getElementById(id);
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  return { ctx, W: rect.width, H: rect.height };
+}
+
+// ── PORTFOLIO VARIANCE ──
+function portVariance(wa, siga, sigb, rho) {
+  const wb = 1 - wa;
+  return wa*wa*siga*siga + wb*wb*sigb*sigb + 2*wa*wb*rho*siga*sigb;
+}
+
+function portReturn(wa, ra, rb) { return wa*ra + (1-wa)*rb; }
+
+function minVarianceWeight(siga, sigb, rho) {
+  const cov = rho*siga*sigb;
+  const num = sigb*sigb - cov;
+  const den = siga*siga + sigb*sigb - 2*cov;
+  if (den === 0) return 0.5;
+  return Math.min(1, Math.max(0, num/den));
+}
+
+// ── TWO-ASSET ──
+function drawTwoAsset() {
+  const ra = parseFloat(document.getElementById('ra').value);
+  const rb = parseFloat(document.getElementById('rb').value);
+  const siga = parseFloat(document.getElementById('siga').value);
+  const sigb = parseFloat(document.getElementById('sigb').value);
+  const rho = parseFloat(document.getElementById('rho').value);
+  const wa = parseFloat(document.getElementById('wa').value);
+
+  document.getElementById('ra-val').textContent = ra.toFixed(1)+'%';
+  document.getElementById('rb-val').textContent = rb.toFixed(1)+'%';
+  document.getElementById('siga-val').textContent = siga.toFixed(1)+'%';
+  document.getElementById('sigb-val').textContent = sigb.toFixed(1)+'%';
+  document.getElementById('rho-val').textContent = rho.toFixed(2);
+  document.getElementById('wa-val').textContent = (wa*100).toFixed(0)+'%';
+  document.getElementById('wbar-a').style.width = (wa*100)+'%';
+  document.getElementById('wbar-b').style.width = ((1-wa)*100)+'%';
+  document.getElementById('weight-label-text').textContent =
+    (wa*100).toFixed(0)+'% A / '+((1-wa)*100).toFixed(0)+'% B';
+
+  const pRet = portReturn(wa, ra, rb);
+  const pVar = portVariance(wa, siga, sigb, rho);
+  const pSig = Math.sqrt(pVar);
+  const rf = 3;
+  const sharpe = (pRet - rf) / pSig;
+  const wmv = minVarianceWeight(siga, sigb, rho);
+
+  document.getElementById('p-ret').textContent = pRet.toFixed(1)+'%';
+  document.getElementById('p-sig').textContent = pSig.toFixed(1)+'%';
+  document.getElementById('p-sharpe').textContent = sharpe.toFixed(2);
+  document.getElementById('p-minw').textContent = (wmv*100).toFixed(0)+'%';
+
+  const mvRet = portReturn(wmv, ra, rb);
+  const mvSig = Math.sqrt(portVariance(wmv, siga, sigb, rho));
+
+  const { ctx, W, H } = setupCanvas('canvas-twoasset');
+  const C = getColors();
+  const pad = { l:48, r:20, t:20, b:40 };
+  const plotW = W-pad.l-pad.r, plotH = H-pad.t-pad.b;
+
+  // Build curve points
+  const pts = Array.from({length:101},(_,i)=>{
+    const w = i/100;
+    return { w, sig: Math.sqrt(portVariance(w,siga,sigb,rho)), ret: portReturn(w,ra,rb) };
+  });
+
+  const sigMax = Math.max(siga, sigb) * 1.2;
+  const sigMin = 0;
+  const retMin = Math.min(ra, rb) * 0.8;
+  const retMax = Math.max(ra, rb) * 1.15;
+
+  function cx(s) { return pad.l + (s-sigMin)/(sigMax-sigMin)*plotW; }
+  function cy(r) { return pad.t + (1-(r-retMin)/(retMax-retMin))*plotH; }
+
+  ctx.clearRect(0,0,W,H);
+
+  // Grid
+  for (let g=0; g<=5; g++) {
+    const s = sigMin + g*(sigMax-sigMin)/5;
+    ctx.beginPath(); ctx.moveTo(cx(s),pad.t); ctx.lineTo(cx(s),pad.t+plotH);
+    ctx.strokeStyle=C.grid; ctx.lineWidth=1; ctx.stroke();
+    const r = retMin + g*(retMax-retMin)/5;
+    ctx.beginPath(); ctx.moveTo(pad.l,cy(r)); ctx.lineTo(pad.l+plotW,cy(r));
+    ctx.stroke();
+  }
+
+  // Axes
+  ctx.beginPath(); ctx.moveTo(pad.l,pad.t); ctx.lineTo(pad.l,pad.t+plotH);
+  ctx.strokeStyle=C.axis; ctx.lineWidth=1; ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(pad.l,pad.t+plotH); ctx.lineTo(pad.l+plotW,pad.t+plotH);
+  ctx.stroke();
+
+  // Labels
+  ctx.fillStyle=C.text; ctx.font='10px system-ui';
+  ctx.textAlign='center';
+  ctx.fillText('Risk (σ%)', pad.l+plotW/2, H-4);
+  ctx.save(); ctx.translate(12, pad.t+plotH/2); ctx.rotate(-Math.PI/2);
+  ctx.fillText('Return (%)', 0, 0); ctx.restore();
+  ctx.textAlign='right';
+  for(let g=1;g<=5;g++) {
+    const r = retMin + g*(retMax-retMin)/5;
+    ctx.fillText(r.toFixed(1), pad.l-5, cy(r)+3);
+  }
+  ctx.textAlign='center';
+  for(let g=1;g<=5;g++) {
+    const s = sigMin + g*(sigMax-sigMin)/5;
+    ctx.fillText(s.toFixed(1), cx(s), pad.t+plotH+14);
+  }
+
+  // Portfolio curve
+  ctx.beginPath();
+  pts.forEach((p,i) => i===0 ? ctx.moveTo(cx(p.sig),cy(p.ret)) : ctx.lineTo(cx(p.sig),cy(p.ret)));
+  ctx.strokeStyle=C.frontier; ctx.lineWidth=2.5; ctx.lineJoin='round'; ctx.stroke();
+
+  // MVP dot
+  ctx.beginPath(); ctx.arc(cx(mvSig),cy(mvRet),6,0,Math.PI*2);
+  ctx.fillStyle=C.mvp; ctx.fill();
+
+  // Asset A & B dots
+  [[siga,ra,'A',C.assetA],[sigb,rb,'B',C.assetB]].forEach(([s,r,lbl,col])=>{
+    ctx.beginPath(); ctx.arc(cx(s),cy(r),6,0,Math.PI*2);
+    ctx.fillStyle=col; ctx.fill();
+    ctx.fillStyle=C.text; ctx.font='bold 11px system-ui'; ctx.textAlign='center';
+    ctx.fillText(lbl, cx(s), cy(r)-10);
+  });
+
+  // Current portfolio dot
+  ctx.beginPath(); ctx.arc(cx(pSig),cy(pRet),7,0,Math.PI*2);
+  ctx.fillStyle=C.dot; ctx.fill();
+  ctx.strokeStyle=C.frontier; ctx.lineWidth=2; ctx.stroke();
+
+  document.getElementById('twoasset-insight').innerHTML =
+    `Portfolio: E(r) = ${pRet.toFixed(1)}%, σ = ${pSig.toFixed(1)}%. ` +
+    (rho < -0.3 ? `Low correlation (ρ=${rho.toFixed(2)}) creates significant diversification — the curve bends far left. ` :
+     rho > 0.7  ? `High correlation (ρ=${rho.toFixed(2)}) — limited diversification benefit. ` :
+                  `Moderate correlation (ρ=${rho.toFixed(2)}). `) +
+    `Minimum variance portfolio uses ${(wmv*100).toFixed(0)}% in A.`;
+}
+
+// ── EFFICIENT FRONTIER ──
+function drawFrontier() {
+  const ra   = parseFloat(document.getElementById('f-ra').value);
+  const rb   = parseFloat(document.getElementById('f-rb').value);
+  const siga = parseFloat(document.getElementById('f-siga').value);
+  const sigb = parseFloat(document.getElementById('f-sigb').value);
+  const rho  = parseFloat(document.getElementById('f-rho').value);
+
+  document.getElementById('f-ra-val').textContent = ra.toFixed(1)+'%';
+  document.getElementById('f-rb-val').textContent = rb.toFixed(1)+'%';
+  document.getElementById('f-siga-val').textContent = siga.toFixed(1)+'%';
+  document.getElementById('f-sigb-val').textContent = sigb.toFixed(1)+'%';
+  document.getElementById('f-rho-val').textContent = rho.toFixed(2);
+
+  const wmv = minVarianceWeight(siga, sigb, rho);
+  const mvSig = Math.sqrt(portVariance(wmv,siga,sigb,rho));
+  const mvRet = portReturn(wmv,ra,rb);
+
+  document.getElementById('mvp-ret').textContent = mvRet.toFixed(1)+'%';
+  document.getElementById('mvp-sig').textContent = mvSig.toFixed(1)+'%';
+  document.getElementById('mvp-wa').textContent = (wmv*100).toFixed(0)+'%';
+
+  const pts = Array.from({length:201},(_,i)=>{
+    const w = i/200;
+    return { w, sig: Math.sqrt(portVariance(w,siga,sigb,rho)), ret: portReturn(w,ra,rb) };
+  });
+
+  const { ctx, W, H } = setupCanvas('canvas-frontier');
+  const C = getColors();
+  const pad = { l:48, r:20, t:20, b:40 };
+  const plotW = W-pad.l-pad.r, plotH = H-pad.t-pad.b;
+
+  const sigMax = Math.max(siga,sigb)*1.2;
+  const retMin = Math.min(ra,rb)*0.8;
+  const retMax = Math.max(ra,rb)*1.15;
+
+  function cx(s) { return pad.l + s/sigMax*plotW; }
+  function cy(r) { return pad.t + (1-(r-retMin)/(retMax-retMin))*plotH; }
+
+  ctx.clearRect(0,0,W,H);
+
+  for(let g=0;g<=5;g++){
+    const s = g*sigMax/5;
+    ctx.beginPath(); ctx.moveTo(cx(s),pad.t); ctx.lineTo(cx(s),pad.t+plotH);
+    ctx.strokeStyle=C.grid; ctx.lineWidth=1; ctx.stroke();
+    const r = retMin + g*(retMax-retMin)/5;
+    ctx.beginPath(); ctx.moveTo(pad.l,cy(r)); ctx.lineTo(pad.l+plotW,cy(r));
+    ctx.stroke();
+  }
+  ctx.beginPath(); ctx.moveTo(pad.l,pad.t); ctx.lineTo(pad.l,pad.t+plotH);
+  ctx.strokeStyle=C.axis; ctx.lineWidth=1; ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(pad.l,pad.t+plotH); ctx.lineTo(pad.l+plotW,pad.t+plotH);
+  ctx.stroke();
+  ctx.fillStyle=C.text; ctx.font='10px system-ui'; ctx.textAlign='center';
+  ctx.fillText('Risk (σ%)', pad.l+plotW/2, H-4);
+  ctx.save(); ctx.translate(12, pad.t+plotH/2); ctx.rotate(-Math.PI/2);
+  ctx.fillText('Return (%)', 0, 0); ctx.restore();
+
+  // Split into efficient (above MVP) and inefficient (below MVP)
+  const mvpIdx = pts.reduce((bi,p,i)=>p.sig<pts[bi].sig?i:bi,0);
+
+  // Inefficient portion (dashed)
+  ctx.beginPath();
+  pts.slice(0, mvpIdx+1).forEach((p,i)=>i===0?ctx.moveTo(cx(p.sig),cy(p.ret)):ctx.lineTo(cx(p.sig),cy(p.ret)));
+  ctx.strokeStyle=C.frontier; ctx.lineWidth=2; ctx.setLineDash([4,3]); ctx.globalAlpha=0.4; ctx.stroke();
+  ctx.setLineDash([]); ctx.globalAlpha=1;
+
+  // Efficient portion
+  ctx.beginPath();
+  pts.slice(mvpIdx).forEach((p,i)=>i===0?ctx.moveTo(cx(p.sig),cy(p.ret)):ctx.lineTo(cx(p.sig),cy(p.ret)));
+  ctx.strokeStyle=C.frontier; ctx.lineWidth=2.5; ctx.stroke();
+
+  // MVP
+  ctx.beginPath(); ctx.arc(cx(mvSig),cy(mvRet),7,0,Math.PI*2);
+  ctx.fillStyle=C.mvp; ctx.fill();
+  ctx.fillStyle=C.text; ctx.font='10px system-ui'; ctx.textAlign='left';
+  ctx.fillText('MVP', cx(mvSig)+9, cy(mvRet)+3);
+
+  // Assets
+  [[siga,ra,'A'],[sigb,rb,'B']].forEach(([s,r,lbl])=>{
+    ctx.beginPath(); ctx.arc(cx(s),cy(r),6,0,Math.PI*2);
+    ctx.fillStyle='#3b6d11'; ctx.fill();
+    ctx.fillStyle=C.text; ctx.font='bold 11px system-ui'; ctx.textAlign='center';
+    ctx.fillText(lbl, cx(s), cy(r)-10);
+  });
+
+  const rSign = rho >= 0 ? '+' : '';
+  document.getElementById('frontier-insight').innerHTML =
+    `With ρ = ${rho.toFixed(2)}, the minimum variance portfolio uses ${(wmv*100).toFixed(0)}% in A, achieving σ = ${mvSig.toFixed(1)}%. ` +
+    (rho <= -0.5
+      ? 'Negative correlation creates a large diversification benefit — the frontier curves sharply left.'
+      : rho >= 0.95
+      ? 'Near-perfect positive correlation — almost no diversification gain.'
+      : 'Moderate correlation still provides diversification (frontier lies left of the straight line).');
+}
+
+// ── CAPM ──
+function drawCAPM() {
+  const rf   = parseFloat(document.getElementById('rf').value);
+  const rm   = parseFloat(document.getElementById('rm').value);
+  const beta = parseFloat(document.getElementById('beta').value);
+
+  document.getElementById('rf-val').textContent   = rf.toFixed(1)+'%';
+  document.getElementById('rm-val').textContent   = rm.toFixed(1)+'%';
+  document.getElementById('beta-val').textContent = beta.toFixed(2);
+
+  const premium = rm - rf;
+  const reqReturn = rf + beta * premium;
+
+  document.getElementById('capm-req').textContent = reqReturn.toFixed(1)+'%';
+  document.getElementById('capm-premium').textContent = premium.toFixed(1)+'%';
+  document.getElementById('capm-beta').textContent = beta.toFixed(2);
+  document.getElementById('capm-risk').textContent = (beta*premium).toFixed(1)+'%';
+
+  document.getElementById('capm-insight').innerHTML =
+    `E(r) = ${rf.toFixed(1)}% + ${beta.toFixed(2)} × (${rm.toFixed(1)}% − ${rf.toFixed(1)}%) = <strong>${reqReturn.toFixed(1)}%</strong>. ` +
+    (beta > 1 ? `β > 1: this asset is more volatile than the market — it demands a higher return.` :
+     beta < 0 ? `β < 0: this asset moves against the market — it acts as a hedge.` :
+     beta === 1 ? `β = 1: this asset moves exactly with the market.` :
+                  `β < 1: this asset is less volatile than the market — lower required return.`);
+
+  const { ctx, W, H } = setupCanvas('canvas-capm');
+  const C = getColors();
+  const pad = { l:52, r:20, t:20, b:40 };
+  const plotW = W-pad.l-pad.r, plotH = H-pad.t-pad.b;
+
+  const betaMax = 2.5, betaMin = -0.5;
+  const retMin = rf - premium*0.3;
+  const retMax = rf + betaMax*premium + premium*0.2;
+
+  function cx(b) { return pad.l + (b-betaMin)/(betaMax-betaMin)*plotW; }
+  function cy(r) { return pad.t + (1-(r-retMin)/(retMax-retMin))*plotH; }
+
+  ctx.clearRect(0,0,W,H);
+
+  for(let g=0;g<=5;g++){
+    const b = betaMin + g*(betaMax-betaMin)/5;
+    ctx.beginPath(); ctx.moveTo(cx(b),pad.t); ctx.lineTo(cx(b),pad.t+plotH);
+    ctx.strokeStyle=C.grid; ctx.lineWidth=1; ctx.stroke();
+    const r = retMin + g*(retMax-retMin)/5;
+    ctx.beginPath(); ctx.moveTo(pad.l,cy(r)); ctx.lineTo(pad.l+plotW,cy(r));
+    ctx.stroke();
+  }
+
+  // Beta = 0 axis
+  ctx.beginPath(); ctx.moveTo(cx(0),pad.t); ctx.lineTo(cx(0),pad.t+plotH);
+  ctx.strokeStyle=C.axis; ctx.lineWidth=1; ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(pad.l,pad.t+plotH); ctx.lineTo(pad.l+plotW,pad.t+plotH);
+  ctx.stroke();
+
+  // SML
+  ctx.beginPath();
+  ctx.moveTo(cx(betaMin), cy(rf+betaMin*premium));
+  ctx.lineTo(cx(betaMax), cy(rf+betaMax*premium));
+  ctx.strokeStyle=C.sml; ctx.lineWidth=2.5; ctx.stroke();
+
+  // rf intercept
+  ctx.beginPath(); ctx.arc(cx(0), cy(rf), 5, 0, Math.PI*2);
+  ctx.fillStyle=C.text; ctx.fill();
+  ctx.fillStyle=C.text; ctx.font='10px system-ui'; ctx.textAlign='left';
+  ctx.fillText('rƒ='+rf.toFixed(1)+'%', cx(0)+7, cy(rf)+3);
+
+  // Market portfolio (β=1)
+  ctx.beginPath(); ctx.arc(cx(1), cy(rm), 5, 0, Math.PI*2);
+  ctx.fillStyle=C.sml; ctx.fill();
+  ctx.fillStyle=C.text;
+  ctx.fillText('Market', cx(1)+7, cy(rm)+3);
+
+  // Asset dot
+  ctx.beginPath(); ctx.arc(cx(beta), cy(reqReturn), 8, 0, Math.PI*2);
+  ctx.fillStyle=C.capmDot; ctx.fill();
+  ctx.fillStyle='#fff'; ctx.font='bold 10px system-ui'; ctx.textAlign='center';
+  ctx.fillText('i', cx(beta), cy(reqReturn)+3);
+
+  // Dashed lines to axes
+  ctx.beginPath(); ctx.moveTo(cx(beta),cy(reqReturn)); ctx.lineTo(cx(beta),pad.t+plotH);
+  ctx.strokeStyle=C.capmDot; ctx.lineWidth=1; ctx.setLineDash([3,3]); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx(beta),cy(reqReturn)); ctx.lineTo(cx(betaMin),cy(reqReturn));
+  ctx.stroke(); ctx.setLineDash([]);
+
+  // Axis labels
+  ctx.fillStyle=C.text; ctx.font='10px system-ui'; ctx.textAlign='center';
+  ctx.fillText('Beta (β)', pad.l+plotW/2, H-4);
+  ctx.save(); ctx.translate(12, pad.t+plotH/2); ctx.rotate(-Math.PI/2);
+  ctx.fillText('Expected Return (%)', 0, 0); ctx.restore();
+
+  ctx.textAlign='right';
+  for(let g=1;g<=5;g++){
+    const r = retMin + g*(retMax-retMin)/5;
+    ctx.fillText(r.toFixed(1)+'%', pad.l-5, cy(r)+3);
+  }
+  ctx.textAlign='center';
+  [-0.5,0,0.5,1,1.5,2,2.5].forEach(b=>{
+    ctx.fillText(b.toFixed(1), cx(b), pad.t+plotH+14);
+  });
+}
+
+function showTab(id) {
+  document.querySelectorAll('.tab').forEach((t,i)=>
+    t.classList.toggle('active',['twoasset','frontier','capm'][i]===id));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  if(id==='twoasset') drawTwoAsset();
+  if(id==='frontier') drawFrontier();
+  if(id==='capm') drawCAPM();
+}
+
+window.addEventListener('load',()=>{ drawTwoAsset(); drawFrontier(); drawCAPM(); });
+window.addEventListener('resize',()=>{ drawTwoAsset(); drawFrontier(); drawCAPM(); });
+</script>
+</body>
+</html>

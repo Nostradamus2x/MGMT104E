@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Normal Distribution Visualizer</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --color-background-primary: #ffffff;
+    --color-background-secondary: #f5f5f4;
+    --color-background-info: #e6f1fb;
+    --color-background-success: #eaf3de;
+    --color-background-warning: #faeeda;
+    --color-text-primary: #1a1a18;
+    --color-text-secondary: #5f5e5a;
+    --color-text-tertiary: #888780;
+    --color-text-info: #185fa5;
+    --color-text-success: #3b6d11;
+    --color-text-warning: #854f0b;
+    --color-border-primary: rgba(0,0,0,0.4);
+    --color-border-secondary: rgba(0,0,0,0.3);
+    --color-border-tertiary: rgba(0,0,0,0.15);
+    --color-border-info: #b5d4f4;
+    --color-border-success: #c0dd97;
+    --color-border-warning: #fac775;
+    --border-radius-md: 8px;
+    --border-radius-lg: 12px;
+    --font-sans: system-ui, -apple-system, sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-background-primary: #1c1c1a;
+      --color-background-secondary: #2c2c2a;
+      --color-background-info: #042c53;
+      --color-background-success: #173404;
+      --color-background-warning: #412402;
+      --color-text-primary: #e8e6df;
+      --color-text-secondary: #b4b2a9;
+      --color-text-tertiary: #888780;
+      --color-text-info: #85b7eb;
+      --color-text-success: #97c459;
+      --color-text-warning: #ef9f27;
+      --color-border-primary: rgba(255,255,255,0.4);
+      --color-border-secondary: rgba(255,255,255,0.3);
+      --color-border-tertiary: rgba(255,255,255,0.15);
+      --color-border-info: #0c447c;
+      --color-border-success: #27500a;
+      --color-border-warning: #633806;
+    }
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background: var(--color-background-secondary);
+    color: var(--color-text-primary);
+    min-height: 100vh;
+    padding: 32px 24px;
+  }
+
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+    background: var(--color-background-primary);
+    border-radius: var(--border-radius-lg);
+    border: 0.5px solid var(--color-border-tertiary);
+    padding: 28px 32px;
+  }
+
+  .back-link {
+    font-size: 12px;
+    color: var(--color-text-tertiary);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 20px;
+    transition: color 0.15s;
+  }
+  .back-link:hover { color: var(--color-text-primary); }
+
+  h1 { font-size: 18px; font-weight: 500; margin-bottom: 6px; }
+  .subtitle { font-size: 13px; color: var(--color-text-secondary); margin-bottom: 24px; }
+
+  /* ── TABS ── */
+  .tabs { display: flex; gap: 6px; margin-bottom: 20px; }
+  .tab {
+    padding: 7px 16px;
+    border-radius: var(--border-radius-md);
+    border: 0.5px solid var(--color-border-secondary);
+    background: var(--color-background-secondary);
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    font-family: var(--font-sans);
+    transition: all .15s;
+  }
+  .tab.active {
+    background: var(--color-background-primary);
+    color: var(--color-text-primary);
+    border-color: var(--color-border-primary);
+    font-weight: 500;
+  }
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* ── SLIDER ROW ── */
+  .slider-row {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 14px;
+  }
+  .slider-row label { font-size: 13px; color: var(--color-text-secondary); width: 160px; flex-shrink: 0; }
+  .slider-row input[type=range] { flex: 1; accent-color: var(--color-text-info); }
+  .slider-row span { font-size: 13px; font-weight: 500; min-width: 40px; text-align: right; }
+
+  /* ── CANVAS ── */
+  canvas {
+    width: 100%;
+    height: 220px;
+    display: block;
+    margin: 16px 0;
+    border-radius: var(--border-radius-md);
+  }
+
+  /* ── STATS ROW ── */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 4px; }
+  .stat {
+    background: var(--color-background-secondary);
+    border-radius: var(--border-radius-md);
+    padding: 10px 14px;
+  }
+  .stat-label { font-size: 11px; color: var(--color-text-tertiary); margin-bottom: 3px; }
+  .stat-val { font-size: 18px; font-weight: 500; }
+
+  .insight {
+    margin-top: 16px;
+    padding: 12px 14px;
+    border-left: 2px solid var(--color-border-info);
+    background: var(--color-background-info);
+    border-radius: 0 var(--border-radius-md) var(--border-radius-md) 0;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    line-height: 1.6;
+  }
+
+  .shade-legend { display: flex; gap: 16px; margin-bottom: 8px; font-size: 12px; color: var(--color-text-secondary); flex-wrap: wrap; }
+  .shade-dot { width: 12px; height: 12px; border-radius: 2px; display: inline-block; margin-right: 4px; vertical-align: middle; }
+
+  /* z-score table */
+  .z-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    margin-top: 12px;
+  }
+  .z-table th, .z-table td {
+    padding: 7px 10px;
+    text-align: center;
+    border: 0.5px solid var(--color-border-tertiary);
+  }
+  .z-table th {
+    background: var(--color-background-secondary);
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+  }
+  .z-table td { color: var(--color-text-primary); }
+  .z-table tr:hover td { background: var(--color-background-info); }
+  .z-table .highlight td { background: var(--color-background-info); color: var(--color-text-info); font-weight: 500; }
+</style>
+</head>
+<body>
+<div class="container">
+  <a class="back-link" href="index.html">← All Tools</a>
+  <h1>Normal Distribution Visualizer</h1>
+  <p class="subtitle">MGMT E-104 · Week 2 · The Normal Distribution &amp; Standardization</p>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('shape')">Shape &amp; Area</button>
+    <button class="tab" onclick="showTab('zscore')">Z-Scores</button>
+    <button class="tab" onclick="showTab('empirical')">Empirical Rule</button>
+  </div>
+
+  <!-- SHAPE & AREA -->
+  <div class="panel active" id="panel-shape">
+    <div class="slider-row">
+      <label>Mean (μ)</label>
+      <input type="range" min="-3" max="3" value="0" step="0.1" id="mu" oninput="drawShape()">
+      <span id="mu-val">0.0</span>
+    </div>
+    <div class="slider-row">
+      <label>Std Dev (σ)</label>
+      <input type="range" min="0.3" max="3" value="1" step="0.1" id="sigma" oninput="drawShape()">
+      <span id="sigma-val">1.0</span>
+    </div>
+    <div class="slider-row">
+      <label>Shade from x =</label>
+      <input type="range" min="-4" max="4" value="-1" step="0.1" id="xlo" oninput="drawShape()">
+      <span id="xlo-val">−1.0</span>
+    </div>
+    <div class="slider-row">
+      <label>Shade to x =</label>
+      <input type="range" min="-4" max="4" value="1" step="0.1" id="xhi" oninput="drawShape()">
+      <span id="xhi-val">1.0</span>
+    </div>
+    <canvas id="canvas-shape"></canvas>
+    <div class="stats">
+      <div class="stat"><div class="stat-label">Mean (μ)</div><div class="stat-val" id="s-mu">0.0</div></div>
+      <div class="stat"><div class="stat-label">Std Dev (σ)</div><div class="stat-val" id="s-sigma">1.0</div></div>
+      <div class="stat"><div class="stat-label">Shaded Area</div><div class="stat-val" id="s-area">68.3%</div></div>
+      <div class="stat"><div class="stat-label">P(a &lt; X &lt; b)</div><div class="stat-val" id="s-prob">0.683</div></div>
+    </div>
+    <div class="insight" id="shape-insight">The shaded region shows P(−1.0 &lt; X &lt; 1.0) = 68.3%. This is one standard deviation on either side of the mean.</div>
+  </div>
+
+  <!-- Z-SCORES -->
+  <div class="panel" id="panel-zscore">
+    <div class="slider-row">
+      <label>Raw Score (x)</label>
+      <input type="range" min="-4" max="4" value="1.5" step="0.1" id="raw-x" oninput="drawZscore()">
+      <span id="raw-x-val">1.5</span>
+    </div>
+    <div class="slider-row">
+      <label>Mean (μ)</label>
+      <input type="range" min="-3" max="3" value="0" step="0.1" id="z-mu" oninput="drawZscore()">
+      <span id="z-mu-val">0.0</span>
+    </div>
+    <div class="slider-row">
+      <label>Std Dev (σ)</label>
+      <input type="range" min="0.3" max="3" value="1" step="0.1" id="z-sigma" oninput="drawZscore()">
+      <span id="z-sigma-val">1.0</span>
+    </div>
+    <canvas id="canvas-zscore"></canvas>
+    <div class="stats">
+      <div class="stat"><div class="stat-label">Raw Score (x)</div><div class="stat-val" id="z-rawval">1.5</div></div>
+      <div class="stat"><div class="stat-label">Z-Score</div><div class="stat-val" id="z-zval">1.50</div></div>
+      <div class="stat"><div class="stat-label">P(X ≤ x)</div><div class="stat-val" id="z-cdf">93.3%</div></div>
+      <div class="stat"><div class="stat-label">P(X &gt; x)</div><div class="stat-val" id="z-upper">6.7%</div></div>
+    </div>
+    <div class="insight" id="zscore-insight">z = (x − μ) / σ = (1.5 − 0) / 1 = 1.50. This score is 1.5 standard deviations above the mean. About 93.3% of observations fall below it.</div>
+  </div>
+
+  <!-- EMPIRICAL RULE -->
+  <div class="panel" id="panel-empirical">
+    <div class="slider-row">
+      <label>Mean (μ)</label>
+      <input type="range" min="-2" max="2" value="0" step="0.5" id="emp-mu" oninput="drawEmpirical()">
+      <span id="emp-mu-val">0.0</span>
+    </div>
+    <div class="slider-row">
+      <label>Std Dev (σ)</label>
+      <input type="range" min="0.5" max="2" value="1" step="0.1" id="emp-sigma" oninput="drawEmpirical()">
+      <span id="emp-sigma-val">1.0</span>
+    </div>
+    <canvas id="canvas-empirical"></canvas>
+    <div class="shade-legend">
+      <span><span class="shade-dot" style="background:rgba(24,95,165,0.65)"></span>μ ± 1σ → 68.3%</span>
+      <span><span class="shade-dot" style="background:rgba(24,95,165,0.35)"></span>μ ± 2σ → 95.4%</span>
+      <span><span class="shade-dot" style="background:rgba(24,95,165,0.15)"></span>μ ± 3σ → 99.7%</span>
+    </div>
+    <div class="insight">The <strong>68–95–99.7 rule</strong>: roughly 68% of data falls within 1 standard deviation of the mean, 95% within 2σ, and 99.7% within 3σ. This underpins confidence intervals and hypothesis tests.</div>
+  </div>
+</div>
+
+<script>
+// ── Helpers ──
+function normalPDF(x, mu, sigma) {
+  return Math.exp(-0.5 * ((x - mu) / sigma) ** 2) / (sigma * Math.sqrt(2 * Math.PI));
+}
+
+// Numerical CDF via error function approximation
+function erf(x) {
+  const a1=0.254829592,a2=-0.284496736,a3=1.421413741,a4=-1.453152027,a5=1.061405429,p=0.3275911;
+  const sign = x < 0 ? -1 : 1; x = Math.abs(x);
+  const t = 1 / (1 + p * x);
+  const y = 1 - (((((a5*t+a4)*t)+a3)*t+a2)*t+a1)*t*Math.exp(-x*x);
+  return sign * y;
+}
+
+function normalCDF(x, mu, sigma) {
+  return 0.5 * (1 + erf((x - mu) / (sigma * Math.sqrt(2))));
+}
+
+function pct(p) { return (p * 100).toFixed(1) + '%'; }
+
+function setupCanvas(id) {
+  const canvas = document.getElementById(id);
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  return { ctx, W: rect.width, H: rect.height };
+}
+
+function getColors() {
+  const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  return {
+    curve: dark ? '#85b7eb' : '#185fa5',
+    shade: dark ? 'rgba(133,183,235,0.35)' : 'rgba(24,95,165,0.2)',
+    axis: dark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)',
+    text: dark ? '#888780' : '#888780',
+    grid: dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
+    marker: dark ? '#ef9f27' : '#854f0b',
+  };
+}
+
+// ── SHAPE & AREA ──
+function drawShape() {
+  const mu    = parseFloat(document.getElementById('mu').value);
+  const sigma = parseFloat(document.getElementById('sigma').value);
+  const xlo   = parseFloat(document.getElementById('xlo').value);
+  const xhi   = parseFloat(document.getElementById('xhi').value);
+
+  document.getElementById('mu-val').textContent    = mu.toFixed(1);
+  document.getElementById('sigma-val').textContent = sigma.toFixed(1);
+  document.getElementById('xlo-val').textContent   = (xlo < 0 ? '−' : '') + Math.abs(xlo).toFixed(1);
+  document.getElementById('xhi-val').textContent   = (xhi < 0 ? '−' : '') + Math.abs(xhi).toFixed(1);
+
+  const area = Math.max(0, normalCDF(xhi, mu, sigma) - normalCDF(xlo, mu, sigma));
+
+  document.getElementById('s-mu').textContent    = mu.toFixed(1);
+  document.getElementById('s-sigma').textContent = sigma.toFixed(1);
+  document.getElementById('s-area').textContent  = pct(area);
+  document.getElementById('s-prob').textContent  = area.toFixed(3);
+
+  document.getElementById('shape-insight').innerHTML =
+    `The shaded region shows P(${xlo.toFixed(1)} &lt; X &lt; ${xhi.toFixed(1)}) = <strong>${pct(area)}</strong>. ` +
+    (Math.abs(xlo - (mu - sigma)) < 0.15 && Math.abs(xhi - (mu + sigma)) < 0.15
+      ? 'This is one standard deviation on either side of the mean (the 68% rule).'
+      : `Use the z-score tab to convert these to standard units.`);
+
+  const { ctx, W, H } = setupCanvas('canvas-shape');
+  drawNormalCanvas(ctx, W, H, mu, sigma, xlo, xhi);
+}
+
+// ── Z-SCORE ──
+function drawZscore() {
+  const x     = parseFloat(document.getElementById('raw-x').value);
+  const mu    = parseFloat(document.getElementById('z-mu').value);
+  const sigma = parseFloat(document.getElementById('z-sigma').value);
+  const z     = (x - mu) / sigma;
+  const cdf   = normalCDF(x, mu, sigma);
+
+  document.getElementById('raw-x-val').textContent  = x.toFixed(1);
+  document.getElementById('z-mu-val').textContent   = mu.toFixed(1);
+  document.getElementById('z-sigma-val').textContent= sigma.toFixed(1);
+  document.getElementById('z-rawval').textContent   = x.toFixed(1);
+  document.getElementById('z-zval').textContent     = z.toFixed(2);
+  document.getElementById('z-cdf').textContent      = pct(cdf);
+  document.getElementById('z-upper').textContent    = pct(1 - cdf);
+
+  document.getElementById('zscore-insight').innerHTML =
+    `z = (x − μ) / σ = (${x.toFixed(1)} − ${mu.toFixed(1)}) / ${sigma.toFixed(1)} = <strong>${z.toFixed(2)}</strong>. ` +
+    `This score is ${Math.abs(z).toFixed(2)} standard deviations ${z >= 0 ? 'above' : 'below'} the mean. ` +
+    `About ${pct(cdf)} of observations fall below it.`;
+
+  const { ctx, W, H } = setupCanvas('canvas-zscore');
+  drawNormalCanvas(ctx, W, H, mu, sigma, -10, x, x);
+}
+
+// ── EMPIRICAL ──
+function drawEmpirical() {
+  const mu    = parseFloat(document.getElementById('emp-mu').value);
+  const sigma = parseFloat(document.getElementById('emp-sigma').value);
+  document.getElementById('emp-mu-val').textContent    = mu.toFixed(1);
+  document.getElementById('emp-sigma-val').textContent = sigma.toFixed(1);
+  const { ctx, W, H } = setupCanvas('canvas-empirical');
+  drawEmpiricalCanvas(ctx, W, H, mu, sigma);
+}
+
+// ── SHARED DRAW FUNCTION ──
+function drawNormalCanvas(ctx, W, H, mu, sigma, shadeLo, shadeHi, markerX = null) {
+  ctx.clearRect(0, 0, W, H);
+  const C = getColors();
+  const pad = { l: 30, r: 20, t: 20, b: 36 };
+  const plotW = W - pad.l - pad.r;
+  const plotH = H - pad.t - pad.b;
+
+  const xMin = mu - 4 * sigma;
+  const xMax = mu + 4 * sigma;
+  const yMax = normalPDF(mu, mu, sigma) * 1.15;
+
+  function toCanvasX(x) { return pad.l + (x - xMin) / (xMax - xMin) * plotW; }
+  function toCanvasY(y) { return pad.t + (1 - y / yMax) * plotH; }
+
+  // Grid
+  for (let i = -4; i <= 4; i++) {
+    const cx = toCanvasX(mu + i * sigma);
+    ctx.beginPath();
+    ctx.moveTo(cx, pad.t);
+    ctx.lineTo(cx, pad.t + plotH);
+    ctx.strokeStyle = C.grid;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  // Shaded area
+  ctx.beginPath();
+  const lo = Math.max(xMin, shadeLo);
+  const hi = Math.min(xMax, shadeHi);
+  ctx.moveTo(toCanvasX(lo), toCanvasY(0));
+  for (let xi = lo; xi <= hi; xi += (xMax - xMin) / 400) {
+    ctx.lineTo(toCanvasX(xi), toCanvasY(normalPDF(xi, mu, sigma)));
+  }
+  ctx.lineTo(toCanvasX(hi), toCanvasY(0));
+  ctx.closePath();
+  ctx.fillStyle = C.shade;
+  ctx.fill();
+
+  // Curve
+  ctx.beginPath();
+  for (let xi = xMin; xi <= xMax; xi += (xMax - xMin) / 400) {
+    const cx = toCanvasX(xi), cy = toCanvasY(normalPDF(xi, mu, sigma));
+    xi === xMin ? ctx.moveTo(cx, cy) : ctx.lineTo(cx, cy);
+  }
+  ctx.strokeStyle = C.curve;
+  ctx.lineWidth = 2.5;
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+
+  // Axis
+  ctx.beginPath();
+  ctx.moveTo(pad.l, pad.t + plotH);
+  ctx.lineTo(pad.l + plotW, pad.t + plotH);
+  ctx.strokeStyle = C.axis;
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Axis labels
+  ctx.fillStyle = C.text;
+  ctx.font = '10px system-ui';
+  ctx.textAlign = 'center';
+  for (let i = -3; i <= 3; i++) {
+    const val = mu + i * sigma;
+    ctx.fillText(val.toFixed(1), toCanvasX(val), pad.t + plotH + 14);
+  }
+
+  // Mean line
+  ctx.beginPath();
+  ctx.moveTo(toCanvasX(mu), pad.t);
+  ctx.lineTo(toCanvasX(mu), pad.t + plotH);
+  ctx.strokeStyle = C.axis;
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 3]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Marker
+  if (markerX !== null && markerX >= xMin && markerX <= xMax) {
+    const mx = toCanvasX(markerX);
+    ctx.beginPath();
+    ctx.moveTo(mx, pad.t);
+    ctx.lineTo(mx, pad.t + plotH);
+    ctx.strokeStyle = C.marker;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = C.marker;
+    ctx.font = 'bold 11px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('x=' + markerX.toFixed(1), mx, pad.t + 12);
+  }
+}
+
+function drawEmpiricalCanvas(ctx, W, H, mu, sigma) {
+  ctx.clearRect(0, 0, W, H);
+  const C = getColors();
+  const pad = { l: 30, r: 20, t: 20, b: 36 };
+  const plotW = W - pad.l - pad.r;
+  const plotH = H - pad.t - pad.b;
+  const xMin = mu - 4 * sigma;
+  const xMax = mu + 4 * sigma;
+  const yMax = normalPDF(mu, mu, sigma) * 1.15;
+
+  function toCanvasX(x) { return pad.l + (x - xMin) / (xMax - xMin) * plotW; }
+  function toCanvasY(y) { return pad.t + (1 - y / yMax) * plotH; }
+
+  const bands = [
+    { lo: mu - 3*sigma, hi: mu + 3*sigma, color: 'rgba(24,95,165,0.12)' },
+    { lo: mu - 2*sigma, hi: mu + 2*sigma, color: 'rgba(24,95,165,0.25)' },
+    { lo: mu - sigma,   hi: mu + sigma,   color: 'rgba(24,95,165,0.45)' },
+  ];
+
+  bands.forEach(b => {
+    ctx.beginPath();
+    ctx.moveTo(toCanvasX(b.lo), toCanvasY(0));
+    for (let xi = b.lo; xi <= b.hi; xi += (xMax - xMin) / 400) {
+      ctx.lineTo(toCanvasX(xi), toCanvasY(normalPDF(xi, mu, sigma)));
+    }
+    ctx.lineTo(toCanvasX(b.hi), toCanvasY(0));
+    ctx.closePath();
+    ctx.fillStyle = b.color;
+    ctx.fill();
+  });
+
+  // Curve
+  ctx.beginPath();
+  for (let xi = xMin; xi <= xMax; xi += (xMax - xMin) / 400) {
+    const cx = toCanvasX(xi), cy = toCanvasY(normalPDF(xi, mu, sigma));
+    xi === xMin ? ctx.moveTo(cx, cy) : ctx.lineTo(cx, cy);
+  }
+  ctx.strokeStyle = getColors().curve;
+  ctx.lineWidth = 2.5;
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+
+  // Axis
+  ctx.beginPath();
+  ctx.moveTo(pad.l, pad.t + plotH);
+  ctx.lineTo(pad.l + plotW, pad.t + plotH);
+  ctx.strokeStyle = C.axis;
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  ctx.fillStyle = C.text;
+  ctx.font = '10px system-ui';
+  ctx.textAlign = 'center';
+  [mu-3*sigma, mu-2*sigma, mu-sigma, mu, mu+sigma, mu+2*sigma, mu+3*sigma].forEach(v => {
+    ctx.fillText(v.toFixed(1), toCanvasX(v), pad.t + plotH + 14);
+  });
+
+  // Band labels
+  ctx.font = 'bold 11px system-ui';
+  ctx.textAlign = 'center';
+  [
+    { x: mu, label: '68%', y: pad.t + plotH * 0.3 },
+    { x: mu, label: '95%', y: pad.t + plotH * 0.12 },
+    { x: mu, label: '99.7%', y: pad.t + 14 },
+  ].forEach(l => {
+    ctx.fillStyle = getColors().curve;
+    ctx.globalAlpha = 0.7;
+    ctx.fillText(l.label, toCanvasX(l.x), l.y);
+    ctx.globalAlpha = 1;
+  });
+}
+
+function showTab(id) {
+  document.querySelectorAll('.tab').forEach((t, i) =>
+    t.classList.toggle('active', ['shape','zscore','empirical'][i] === id));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  if (id === 'shape') drawShape();
+  if (id === 'zscore') drawZscore();
+  if (id === 'empirical') drawEmpirical();
+}
+
+// Init
+window.addEventListener('load', () => {
+  drawShape();
+  drawZscore();
+  drawEmpirical();
+});
+window.addEventListener('resize', () => {
+  drawShape(); drawZscore(); drawEmpirical();
+});
+</script>
+</body>
+</html>

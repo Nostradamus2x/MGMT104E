@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Regression Explorer</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --color-background-primary: #ffffff;
+    --color-background-secondary: #f5f5f4;
+    --color-background-info: #e6f1fb;
+    --color-background-success: #eaf3de;
+    --color-background-warning: #faeeda;
+    --color-text-primary: #1a1a18;
+    --color-text-secondary: #5f5e5a;
+    --color-text-tertiary: #888780;
+    --color-text-info: #185fa5;
+    --color-text-success: #3b6d11;
+    --color-text-warning: #854f0b;
+    --color-border-primary: rgba(0,0,0,0.4);
+    --color-border-secondary: rgba(0,0,0,0.3);
+    --color-border-tertiary: rgba(0,0,0,0.15);
+    --color-border-info: #b5d4f4;
+    --color-border-success: #c0dd97;
+    --color-border-warning: #fac775;
+    --border-radius-md: 8px;
+    --border-radius-lg: 12px;
+    --font-sans: system-ui, -apple-system, sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-background-primary: #1c1c1a;
+      --color-background-secondary: #2c2c2a;
+      --color-background-info: #042c53;
+      --color-background-success: #173404;
+      --color-background-warning: #412402;
+      --color-text-primary: #e8e6df;
+      --color-text-secondary: #b4b2a9;
+      --color-text-tertiary: #888780;
+      --color-text-info: #85b7eb;
+      --color-text-success: #97c459;
+      --color-text-warning: #ef9f27;
+      --color-border-primary: rgba(255,255,255,0.4);
+      --color-border-secondary: rgba(255,255,255,0.3);
+      --color-border-tertiary: rgba(255,255,255,0.15);
+      --color-border-info: #0c447c;
+      --color-border-success: #27500a;
+      --color-border-warning: #633806;
+    }
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background: var(--color-background-secondary);
+    color: var(--color-text-primary);
+    min-height: 100vh;
+    padding: 32px 24px;
+  }
+
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+    background: var(--color-background-primary);
+    border-radius: var(--border-radius-lg);
+    border: 0.5px solid var(--color-border-tertiary);
+    padding: 28px 32px;
+  }
+
+  .back-link {
+    font-size: 12px; color: var(--color-text-tertiary); text-decoration: none;
+    display: inline-flex; align-items: center; gap: 4px; margin-bottom: 20px;
+    transition: color 0.15s;
+  }
+  .back-link:hover { color: var(--color-text-primary); }
+
+  h1 { font-size: 18px; font-weight: 500; margin-bottom: 6px; }
+  .subtitle { font-size: 13px; color: var(--color-text-secondary); margin-bottom: 24px; }
+
+  .tabs { display: flex; gap: 6px; margin-bottom: 20px; }
+  .tab {
+    padding: 7px 16px; border-radius: var(--border-radius-md);
+    border: 0.5px solid var(--color-border-secondary);
+    background: var(--color-background-secondary);
+    cursor: pointer; font-size: 13px; color: var(--color-text-secondary);
+    font-family: var(--font-sans); transition: all .15s;
+  }
+  .tab.active {
+    background: var(--color-background-primary); color: var(--color-text-primary);
+    border-color: var(--color-border-primary); font-weight: 500;
+  }
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  canvas {
+    width: 100%; height: 260px; display: block;
+    border-radius: var(--border-radius-md); cursor: crosshair;
+    margin-bottom: 12px;
+  }
+
+  .hint { font-size: 12px; color: var(--color-text-tertiary); margin-bottom: 12px; }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; }
+  .stat { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 10px 14px; }
+  .stat-label { font-size: 11px; color: var(--color-text-tertiary); margin-bottom: 3px; }
+  .stat-val { font-size: 18px; font-weight: 500; }
+
+  .insight {
+    padding: 12px 14px;
+    border-left: 2px solid var(--color-border-info);
+    background: var(--color-background-info);
+    border-radius: 0 var(--border-radius-md) var(--border-radius-md) 0;
+    font-size: 13px; color: var(--color-text-secondary); line-height: 1.6;
+  }
+
+  .controls { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .btn {
+    padding: 6px 14px; border-radius: var(--border-radius-md);
+    border: 0.5px solid var(--color-border-secondary);
+    background: var(--color-background-secondary);
+    cursor: pointer; font-size: 12px; font-family: var(--font-sans);
+    color: var(--color-text-secondary); transition: all .15s;
+  }
+  .btn:hover { background: var(--color-background-primary); color: var(--color-text-primary); border-color: var(--color-border-primary); }
+  .btn.active-btn { background: var(--color-background-info); border-color: var(--color-border-info); color: var(--color-text-info); }
+
+  .slider-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .slider-row label { font-size: 13px; color: var(--color-text-secondary); width: 160px; flex-shrink: 0; }
+  .slider-row input[type=range] { flex: 1; accent-color: var(--color-text-info); }
+  .slider-row span { font-size: 13px; font-weight: 500; min-width: 40px; text-align: right; }
+
+  .legend { display: flex; gap: 16px; margin-bottom: 10px; font-size: 12px; color: var(--color-text-secondary); }
+  .legend-dot { width: 12px; height: 12px; border-radius: 2px; display: inline-block; margin-right: 4px; vertical-align: middle; }
+</style>
+</head>
+<body>
+<div class="container">
+  <a class="back-link" href="index.html">← All Tools</a>
+  <h1>Regression Explorer</h1>
+  <p class="subtitle">MGMT E-104 · Weeks 1–4 · Simple &amp; Multiple Linear Regression</p>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('draw')">Draw Your Data</button>
+    <button class="tab" onclick="showTab('ols')">OLS Mechanics</button>
+    <button class="tab" onclick="showTab('r2')">R² &amp; Fit</button>
+  </div>
+
+  <!-- DRAW YOUR DATA -->
+  <div class="panel active" id="panel-draw">
+    <p class="hint">Click anywhere on the plot to add data points. The regression line updates live.</p>
+    <div class="controls">
+      <button class="btn" id="btn-residuals" onclick="toggleResiduals()">Show Residuals</button>
+      <button class="btn" id="btn-outlier" onclick="addOutlier()">Add Outlier</button>
+      <button class="btn" onclick="clearPoints()">Clear</button>
+    </div>
+    <canvas id="canvas-draw"></canvas>
+    <div class="stats">
+      <div class="stat"><div class="stat-label">β₁ (slope)</div><div class="stat-val" id="d-slope">—</div></div>
+      <div class="stat"><div class="stat-label">β₀ (intercept)</div><div class="stat-val" id="d-intercept">—</div></div>
+      <div class="stat"><div class="stat-label">R²</div><div class="stat-val" id="d-r2">—</div></div>
+      <div class="stat"><div class="stat-label">n</div><div class="stat-val" id="d-n">0</div></div>
+    </div>
+    <div class="insight" id="draw-insight">Add at least 2 points to fit a regression line. Click to place points — try adding an outlier to see how it pulls the line.</div>
+  </div>
+
+  <!-- OLS MECHANICS -->
+  <div class="panel" id="panel-ols">
+    <p class="hint">Drag the slope and intercept sliders. Watch how residuals change — OLS minimizes the sum of squared residuals (SSR).</p>
+    <div class="slider-row">
+      <label>Slope (β₁)</label>
+      <input type="range" min="-3" max="3" value="1" step="0.05" id="ols-slope" oninput="drawOLS()">
+      <span id="ols-slope-val">1.00</span>
+    </div>
+    <div class="slider-row">
+      <label>Intercept (β₀)</label>
+      <input type="range" min="-3" max="3" value="0" step="0.05" id="ols-intercept" oninput="drawOLS()">
+      <span id="ols-intercept-val">0.00</span>
+    </div>
+    <div class="legend">
+      <span><span class="legend-dot" style="background:rgba(24,95,165,0.8)"></span>Your line</span>
+      <span><span class="legend-dot" style="background:rgba(59,109,17,0.8)"></span>OLS best fit</span>
+      <span><span class="legend-dot" style="background:rgba(133,79,11,0.5)"></span>Residuals</span>
+    </div>
+    <canvas id="canvas-ols"></canvas>
+    <div class="stats">
+      <div class="stat"><div class="stat-label">Your SSR</div><div class="stat-val" id="ols-ssr">—</div></div>
+      <div class="stat"><div class="stat-label">Min SSR (OLS)</div><div class="stat-val" id="ols-minssr">—</div></div>
+      <div class="stat"><div class="stat-label">Your β₁</div><div class="stat-val" id="ols-b1">1.00</div></div>
+      <div class="stat"><div class="stat-label">OLS β₁</div><div class="stat-val" id="ols-b1-opt">—</div></div>
+    </div>
+    <div class="insight" id="ols-insight">OLS (Ordinary Least Squares) finds β₀ and β₁ that minimize Σ(yᵢ − ŷᵢ)². Try to match the green line by adjusting the sliders.</div>
+  </div>
+
+  <!-- R² & FIT -->
+  <div class="panel" id="panel-r2">
+    <div class="slider-row">
+      <label>Noise level</label>
+      <input type="range" min="0.05" max="2" value="0.5" step="0.05" id="noise" oninput="drawR2()">
+      <span id="noise-val">0.50</span>
+    </div>
+    <div class="slider-row">
+      <label>True slope</label>
+      <input type="range" min="0" max="3" value="1.5" step="0.1" id="true-slope" oninput="drawR2()">
+      <span id="true-slope-val">1.50</span>
+    </div>
+    <canvas id="canvas-r2"></canvas>
+    <div class="stats">
+      <div class="stat"><div class="stat-label">R²</div><div class="stat-val" id="r2-val">—</div></div>
+      <div class="stat"><div class="stat-label">Adj. R²</div><div class="stat-val" id="adj-r2-val">—</div></div>
+      <div class="stat"><div class="stat-label">RMSE</div><div class="stat-val" id="rmse-val">—</div></div>
+      <div class="stat"><div class="stat-label">Fit</div><div class="stat-val" id="fit-label">—</div></div>
+    </div>
+    <div class="insight" id="r2-insight">R² measures the proportion of variance in Y explained by the model. R² = 1 − SSR/SST. Increase the noise to see how it drives R² down even with a real underlying relationship.</div>
+  </div>
+</div>
+
+<script>
+// ── Fixed OLS dataset (for ols tab and r2 tab) ──
+const BASE_X = [-2,-1.5,-1.2,-0.8,-0.3,0,0.4,0.9,1.3,1.8,2.2,2.5];
+const BASE_Y = [-1.8,-1.2,-0.7,-0.4,0.1,0.3,0.9,1.1,1.6,2.0,2.3,2.6];
+
+function ols(xs, ys) {
+  const n = xs.length;
+  if (n < 2) return null;
+  const xm = xs.reduce((a,b)=>a+b,0)/n;
+  const ym = ys.reduce((a,b)=>a+b,0)/n;
+  const num = xs.reduce((s,x,i)=>s+(x-xm)*(ys[i]-ym),0);
+  const den = xs.reduce((s,x)=>s+(x-xm)**2,0);
+  if (den === 0) return null;
+  const b1 = num/den;
+  const b0 = ym - b1*xm;
+  const yhat = xs.map(x=>b0+b1*x);
+  const ssr = ys.reduce((s,y,i)=>s+(y-yhat[i])**2,0);
+  const sst = ys.reduce((s,y)=>s+(y-ym)**2,0);
+  const r2 = sst === 0 ? 1 : 1-ssr/sst;
+  const rmse = Math.sqrt(ssr/n);
+  return { b0, b1, r2, rmse, ssr, sst };
+}
+
+function getColors() {
+  const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  return {
+    curve: dark ? '#85b7eb' : '#185fa5',
+    curve2: dark ? '#97c459' : '#3b6d11',
+    residual: dark ? 'rgba(239,159,39,0.5)' : 'rgba(133,79,11,0.4)',
+    point: dark ? '#e8e6df' : '#1a1a18',
+    axis: dark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)',
+    text: dark ? '#888780' : '#888780',
+    grid: dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
+  };
+}
+
+function setupCanvas(id) {
+  const canvas = document.getElementById(id);
+  const dpr = window.devicePixelRatio||1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  return { ctx, W: rect.width, H: rect.height };
+}
+
+// ── DRAW TAB ──
+let drawPoints = [];
+let showResiduals = false;
+
+function toggleResiduals() {
+  showResiduals = !showResiduals;
+  document.getElementById('btn-residuals').classList.toggle('active-btn', showResiduals);
+  document.getElementById('btn-residuals').textContent = showResiduals ? 'Hide Residuals' : 'Show Residuals';
+  renderDraw();
+}
+
+function clearPoints() { drawPoints = []; renderDraw(); }
+
+function addOutlier() {
+  drawPoints.push({ x: 2.5, y: -2.0 + (Math.random()-0.5)*0.3 });
+  renderDraw();
+}
+
+function initDrawCanvas() {
+  const canvas = document.getElementById('canvas-draw');
+  canvas.addEventListener('click', function(e) {
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const px = (e.clientX - rect.left);
+    const py = (e.clientY - rect.top);
+    const W = rect.width, H = rect.height;
+    const pad = { l:40, r:20, t:20, b:36 };
+    const x = (px - pad.l) / (W - pad.l - pad.r) * 6 - 3;
+    const y = -((py - pad.t) / (H - pad.t - pad.b) * 6 - 3);
+    if (x >= -3 && x <= 3 && y >= -3 && y <= 3) {
+      drawPoints.push({ x, y });
+      renderDraw();
+    }
+  });
+}
+
+function renderDraw() {
+  const { ctx, W, H } = setupCanvas('canvas-draw');
+  const C = getColors();
+  const pad = { l:40, r:20, t:20, b:36 };
+  const plotW = W - pad.l - pad.r, plotH = H - pad.t - pad.b;
+  const xRange = 6, yRange = 6;
+
+  function cx(x) { return pad.l + (x+3)/xRange*plotW; }
+  function cy(y) { return pad.t + (1-(y+3)/yRange)*plotH; }
+
+  ctx.clearRect(0,0,W,H);
+
+  // Grid
+  for(let i=-3;i<=3;i++) {
+    ctx.beginPath(); ctx.moveTo(cx(i),pad.t); ctx.lineTo(cx(i),pad.t+plotH);
+    ctx.strokeStyle=C.grid; ctx.lineWidth=1; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(pad.l,cy(i)); ctx.lineTo(pad.l+plotW,cy(i));
+    ctx.stroke();
+  }
+
+  // Axes
+  ctx.beginPath(); ctx.moveTo(pad.l,cy(0)); ctx.lineTo(pad.l+plotW,cy(0));
+  ctx.strokeStyle=C.axis; ctx.lineWidth=1; ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx(0),pad.t); ctx.lineTo(cx(0),pad.t+plotH);
+  ctx.stroke();
+
+  // Axis labels
+  ctx.fillStyle=C.text; ctx.font='10px system-ui'; ctx.textAlign='center';
+  [-2,-1,0,1,2].forEach(v=>{ ctx.fillText(v, cx(v), pad.t+plotH+14); });
+  ctx.textAlign='right';
+  [-2,-1,1,2].forEach(v=>{ ctx.fillText(v, pad.l-5, cy(v)+3); });
+
+  const xs = drawPoints.map(p=>p.x);
+  const ys = drawPoints.map(p=>p.y);
+  const res = ols(xs, ys);
+
+  // Residuals
+  if (showResiduals && res) {
+    drawPoints.forEach(p=>{
+      const yhat = res.b0 + res.b1*p.x;
+      ctx.beginPath(); ctx.moveTo(cx(p.x),cy(p.y)); ctx.lineTo(cx(p.x),cy(yhat));
+      ctx.strokeStyle=C.residual; ctx.lineWidth=2; ctx.stroke();
+    });
+  }
+
+  // Regression line
+  if (res) {
+    ctx.beginPath();
+    ctx.moveTo(cx(-3), cy(res.b0+res.b1*-3));
+    ctx.lineTo(cx(3),  cy(res.b0+res.b1*3));
+    ctx.strokeStyle=C.curve; ctx.lineWidth=2.5; ctx.stroke();
+  }
+
+  // Points
+  drawPoints.forEach(p=>{
+    ctx.beginPath(); ctx.arc(cx(p.x), cy(p.y), 5, 0, Math.PI*2);
+    ctx.fillStyle=C.point; ctx.fill();
+  });
+
+  // Stats
+  const n = drawPoints.length;
+  document.getElementById('d-n').textContent = n;
+  if (res) {
+    document.getElementById('d-slope').textContent = res.b1.toFixed(2);
+    document.getElementById('d-intercept').textContent = res.b0.toFixed(2);
+    document.getElementById('d-r2').textContent = res.r2.toFixed(3);
+    document.getElementById('draw-insight').innerHTML =
+      `ŷ = ${res.b0.toFixed(2)} + ${res.b1.toFixed(2)}x &nbsp;·&nbsp; R² = ${res.r2.toFixed(3)}. ` +
+      (res.r2 > 0.8 ? 'Strong linear fit.' : res.r2 > 0.4 ? 'Moderate linear fit.' : 'Weak fit — low R².') +
+      (showResiduals ? ' Residuals shown as vertical lines from each point to the fitted line.' : '');
+  } else {
+    ['d-slope','d-intercept','d-r2'].forEach(id=>document.getElementById(id).textContent='—');
+    document.getElementById('draw-insight').textContent = n < 2
+      ? 'Add at least 2 points to fit a regression line.'
+      : 'Fitting...';
+  }
+}
+
+// ── OLS TAB ──
+function drawOLS() {
+  const b1 = parseFloat(document.getElementById('ols-slope').value);
+  const b0 = parseFloat(document.getElementById('ols-intercept').value);
+  document.getElementById('ols-slope-val').textContent = b1.toFixed(2);
+  document.getElementById('ols-intercept-val').textContent = b0.toFixed(2);
+  document.getElementById('ols-b1').textContent = b1.toFixed(2);
+
+  const res = ols(BASE_X, BASE_Y);
+  const ssr = BASE_X.reduce((s,x,i)=>s+(BASE_Y[i]-(b0+b1*x))**2,0);
+
+  document.getElementById('ols-ssr').textContent = ssr.toFixed(2);
+  document.getElementById('ols-minssr').textContent = res ? res.ssr.toFixed(2) : '—';
+  document.getElementById('ols-b1-opt').textContent = res ? res.b1.toFixed(2) : '—';
+
+  const { ctx, W, H } = setupCanvas('canvas-ols');
+  const C = getColors();
+  const pad = { l:40, r:20, t:20, b:36 };
+  const plotW = W - pad.l - pad.r, plotH = H - pad.t - pad.b;
+
+  function cx(x) { return pad.l + (x+3)/6*plotW; }
+  function cy(y) { return pad.t + (1-(y+3)/6)*plotH; }
+
+  ctx.clearRect(0,0,W,H);
+
+  for(let i=-3;i<=3;i++) {
+    ctx.beginPath(); ctx.moveTo(cx(i),pad.t); ctx.lineTo(cx(i),pad.t+plotH);
+    ctx.strokeStyle=C.grid; ctx.lineWidth=1; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(pad.l,cy(i)); ctx.lineTo(pad.l+plotW,cy(i));
+    ctx.stroke();
+  }
+  ctx.beginPath(); ctx.moveTo(pad.l,cy(0)); ctx.lineTo(pad.l+plotW,cy(0));
+  ctx.strokeStyle=C.axis; ctx.lineWidth=1; ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx(0),pad.t); ctx.lineTo(cx(0),pad.t+plotH);
+  ctx.stroke();
+
+  // Residuals for user line
+  BASE_X.forEach((x,i)=>{
+    const yhat = b0+b1*x;
+    ctx.beginPath(); ctx.moveTo(cx(x),cy(BASE_Y[i])); ctx.lineTo(cx(x),cy(yhat));
+    ctx.strokeStyle=C.residual; ctx.lineWidth=2; ctx.stroke();
+  });
+
+  // OLS best fit line
+  if (res) {
+    ctx.beginPath();
+    ctx.moveTo(cx(-3), cy(res.b0+res.b1*-3));
+    ctx.lineTo(cx(3),  cy(res.b0+res.b1*3));
+    ctx.strokeStyle=C.curve2; ctx.lineWidth=2; ctx.setLineDash([5,3]); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // User line
+  ctx.beginPath();
+  ctx.moveTo(cx(-3), cy(b0+b1*-3));
+  ctx.lineTo(cx(3),  cy(b0+b1*3));
+  ctx.strokeStyle=C.curve; ctx.lineWidth=2.5; ctx.stroke();
+
+  // Points
+  BASE_X.forEach((x,i)=>{
+    ctx.beginPath(); ctx.arc(cx(x),cy(BASE_Y[i]),5,0,Math.PI*2);
+    ctx.fillStyle=C.point; ctx.fill();
+  });
+
+  const ratio = res ? (ssr / res.ssr) : 1;
+  document.getElementById('ols-insight').innerHTML = res
+    ? `Your SSR = ${ssr.toFixed(2)} vs OLS minimum = ${res.ssr.toFixed(2)}. ` +
+      (ratio < 1.05 ? 'Excellent! You\'re very close to the optimal line.' :
+       ratio < 1.5  ? 'Getting closer — adjust the slope or intercept.' :
+                      'Your SSR is significantly above the minimum. Keep adjusting.')
+    : '';
+}
+
+// ── R² TAB ──
+let r2Points = [];
+
+function generateR2Points() {
+  const noise = parseFloat(document.getElementById('noise').value);
+  const slope = parseFloat(document.getElementById('true-slope').value);
+  r2Points = Array.from({length:25},(_,i)=>{
+    const x = -2.5 + i*0.2 + (Math.random()-0.5)*0.05;
+    const y = slope*x + (Math.random()-0.5)*2*noise;
+    return {x,y};
+  });
+}
+
+function drawR2() {
+  const noise = parseFloat(document.getElementById('noise').value);
+  const slope = parseFloat(document.getElementById('true-slope').value);
+  document.getElementById('noise-val').textContent = noise.toFixed(2);
+  document.getElementById('true-slope-val').textContent = slope.toFixed(2);
+  generateR2Points();
+
+  const xs = r2Points.map(p=>p.x), ys = r2Points.map(p=>p.y);
+  const res = ols(xs,ys);
+  const n = xs.length;
+
+  if (res) {
+    const adjR2 = 1-(1-res.r2)*(n-1)/(n-2);
+    document.getElementById('r2-val').textContent = res.r2.toFixed(3);
+    document.getElementById('adj-r2-val').textContent = adjR2.toFixed(3);
+    document.getElementById('rmse-val').textContent = res.rmse.toFixed(3);
+    document.getElementById('fit-label').textContent =
+      res.r2 > 0.85 ? 'Strong' : res.r2 > 0.5 ? 'Moderate' : 'Weak';
+    document.getElementById('r2-insight').innerHTML =
+      `R² = ${res.r2.toFixed(3)}: the model explains ${(res.r2*100).toFixed(1)}% of the variance in Y. ` +
+      `With noise = ${noise.toFixed(2)}, increasing it further will push R² lower even though the true slope (${slope.toFixed(2)}) is unchanged.`;
+  }
+
+  const { ctx, W, H } = setupCanvas('canvas-r2');
+  const C = getColors();
+  const pad = { l:40, r:20, t:20, b:36 };
+  const plotW = W-pad.l-pad.r, plotH = H-pad.t-pad.b;
+
+  function cx(x) { return pad.l+(x+3)/6*plotW; }
+  function cy(y) { return pad.t+(1-(Math.max(-3,Math.min(3,y))+3)/6)*plotH; }
+
+  ctx.clearRect(0,0,W,H);
+
+  for(let i=-3;i<=3;i++) {
+    ctx.beginPath(); ctx.moveTo(cx(i),pad.t); ctx.lineTo(cx(i),pad.t+plotH);
+    ctx.strokeStyle=C.grid; ctx.lineWidth=1; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(pad.l,cy(i)); ctx.lineTo(pad.l+plotW,cy(i));
+    ctx.stroke();
+  }
+  ctx.beginPath(); ctx.moveTo(pad.l,cy(0)); ctx.lineTo(pad.l+plotW,cy(0));
+  ctx.strokeStyle=C.axis; ctx.lineWidth=1; ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx(0),pad.t); ctx.lineTo(cx(0),pad.t+plotH);
+  ctx.stroke();
+
+  if (res) {
+    ctx.beginPath();
+    ctx.moveTo(cx(-3),cy(res.b0+res.b1*-3));
+    ctx.lineTo(cx(3), cy(res.b0+res.b1*3));
+    ctx.strokeStyle=C.curve; ctx.lineWidth=2.5; ctx.stroke();
+  }
+
+  r2Points.forEach(p=>{
+    ctx.beginPath(); ctx.arc(cx(p.x),cy(p.y),4,0,Math.PI*2);
+    ctx.fillStyle=C.point; ctx.globalAlpha=0.75; ctx.fill(); ctx.globalAlpha=1;
+  });
+}
+
+function showTab(id) {
+  document.querySelectorAll('.tab').forEach((t,i)=>
+    t.classList.toggle('active',['draw','ols','r2'][i]===id));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  if(id==='draw') renderDraw();
+  if(id==='ols') drawOLS();
+  if(id==='r2') drawR2();
+}
+
+window.addEventListener('load',()=>{
+  initDrawCanvas();
+  renderDraw();
+  drawOLS();
+  generateR2Points(); drawR2();
+});
+window.addEventListener('resize',()=>{
+  renderDraw(); drawOLS(); drawR2();
+});
+</script>
+</body>
+</html>
