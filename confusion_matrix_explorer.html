@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Confusion Matrix Explorer</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --color-background-primary: #ffffff;
+    --color-background-secondary: #f5f5f4;
+    --color-background-info: #e6f1fb;
+    --color-background-success: #eaf3de;
+    --color-background-warning: #faeeda;
+    --color-text-primary: #1a1a18;
+    --color-text-secondary: #5f5e5a;
+    --color-text-tertiary: #888780;
+    --color-text-info: #185fa5;
+    --color-text-success: #3b6d11;
+    --color-text-warning: #854f0b;
+    --color-border-primary: rgba(0,0,0,0.4);
+    --color-border-secondary: rgba(0,0,0,0.3);
+    --color-border-tertiary: rgba(0,0,0,0.15);
+    --color-border-info: #b5d4f4;
+    --color-border-success: #c0dd97;
+    --color-border-warning: #fac775;
+    --border-radius-md: 8px;
+    --border-radius-lg: 12px;
+    --font-sans: system-ui, -apple-system, sans-serif;
+
+    --tp-bg: #eaf3de; --tp-text: #3b6d11; --tp-accent: #97c459;
+    --tn-bg: #eaf3de; --tn-text: #3b6d11; --tn-accent: #c0dd97;
+    --fp-bg: #faeeda; --fp-text: #854f0b; --fp-accent: #fac775;
+    --fn-bg: #faeeda; --fn-text: #854f0b; --fn-accent: #f09595;
+    --header-bg: #2e4057; --header-text: #ffffff;
+    --alt-bg: #f0f4f8;
+    --dot-tp: #97c459; --dot-tn: #c0dd97; --dot-fp: #fac775; --dot-fn: #f09595;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-background-primary: #1c1c1a;
+      --color-background-secondary: #2c2c2a;
+      --color-background-info: #042c53;
+      --color-background-success: #173404;
+      --color-background-warning: #412402;
+      --color-text-primary: #e8e6df;
+      --color-text-secondary: #b4b2a9;
+      --color-text-tertiary: #888780;
+      --color-text-info: #85b7eb;
+      --color-text-success: #97c459;
+      --color-text-warning: #ef9f27;
+      --color-border-primary: rgba(255,255,255,0.4);
+      --color-border-secondary: rgba(255,255,255,0.3);
+      --color-border-tertiary: rgba(255,255,255,0.15);
+      --color-border-info: #0c447c;
+      --color-border-success: #27500a;
+      --color-border-warning: #633806;
+
+      --tp-bg: #173404; --tp-text: #97c459; --tp-accent: #639922;
+      --tn-bg: #173404; --tn-text: #97c459; --tn-accent: #3b6d11;
+      --fp-bg: #412402; --fp-text: #ef9f27; --fp-accent: #ba7517;
+      --fn-bg: #412402; --fn-text: #ef9f27; --fn-accent: #e24b4a;
+      --header-bg: #1a2a3a; --header-text: #d0d8e0;
+      --alt-bg: #2a2a28;
+      --dot-tp: #639922; --dot-tn: #3b6d11; --dot-fp: #ef9f27; --dot-fn: #e24b4a;
+    }
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background: var(--color-background-secondary);
+    color: var(--color-text-primary);
+    min-height: 100vh;
+    padding: 32px 24px;
+  }
+
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+    background: var(--color-background-primary);
+    border-radius: var(--border-radius-lg);
+    border: 0.5px solid var(--color-border-tertiary);
+    padding: 28px 32px;
+  }
+
+  h1 { font-size: 18px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 6px; }
+  .subtitle { font-size: 13px; color: var(--color-text-secondary); margin-bottom: 24px; }
+
+  .slider-row { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+  .slider-row label { font-size: 13px; color: var(--color-text-secondary); width: 80px; flex-shrink: 0; }
+  .slider-row input[type=range] { flex: 1; accent-color: var(--color-text-info); }
+  .slider-row .val { font-size: 14px; font-weight: 500; min-width: 40px; text-align: right; }
+
+  .dots-section { margin-bottom: 14px; }
+  .dots-label { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 5px; }
+  .dots-row { display: flex; flex-wrap: wrap; gap: 3px; margin-bottom: 10px; }
+  .dot { width: 16px; height: 16px; border-radius: 3px; transition: background 0.25s; }
+  .dot-tp { background: var(--dot-tp); } .dot-tn { background: var(--dot-tn); }
+  .dot-fp { background: var(--dot-fp); } .dot-fn { background: var(--dot-fn); }
+
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 16px; font-size: 12px; color: var(--color-text-secondary); }
+  .legend-dot { width: 12px; height: 12px; border-radius: 2px; display: inline-block; margin-right: 4px; vertical-align: middle; }
+
+  .matrix { display: grid; grid-template-columns: 110px 1fr 1fr; grid-template-rows: 36px 1fr 1fr; gap: 3px; margin-bottom: 16px; }
+  .m-corner { display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--color-text-secondary); text-align: center; line-height: 1.3; }
+  .m-header { display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 500; color: var(--color-text-secondary); }
+  .m-cell { display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 4px; padding: 10px 6px; min-height: 68px; transition: all 0.3s; }
+  .m-cell .num { font-size: 24px; font-weight: 500; transition: all 0.3s; }
+  .m-cell .lbl { font-size: 11px; margin-top: 3px; }
+  .tp { background: var(--tp-bg); } .tp .num, .tp .lbl { color: var(--tp-text); }
+  .fp { background: var(--fp-bg); } .fp .num, .fp .lbl { color: var(--fp-text); }
+  .fn { background: var(--fn-bg); } .fn .num, .fn .lbl { color: var(--fn-text); }
+  .tn { background: var(--tn-bg); } .tn .num, .tn .lbl { color: var(--tn-text); }
+
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+  .metric { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 10px 12px; }
+  .metric .m-label { font-size: 11px; color: var(--color-text-secondary); margin-bottom: 2px; }
+  .metric .m-val { font-size: 20px; font-weight: 500; }
+
+  .insight {
+    padding: 12px 14px;
+    border-left: 2px solid var(--color-border-info);
+    background: var(--color-background-info);
+    border-radius: 0 var(--border-radius-md) var(--border-radius-md) 0;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Confusion Matrix — Threshold Explorer</h1>
+  <p class="subtitle">MGMT E-104 · Review Section 9 · Logistic Regression &amp; Classification Metrics</p>
+
+  <div class="slider-row">
+    <label>Threshold</label>
+    <input type="range" min="0" max="100" value="50" step="1" id="thresh" oninput="update()">
+    <span class="val" id="thresh-val">0.50</span>
+  </div>
+
+  <div class="dots-section">
+    <div class="dots-label">Actual positives (50 cases) — predicted probability ranked high → low</div>
+    <div class="dots-row" id="pos-dots"></div>
+    <div class="dots-label">Actual negatives (150 cases) — predicted probability ranked high → low</div>
+    <div class="dots-row" id="neg-dots"></div>
+  </div>
+
+  <div class="legend">
+    <span><span class="legend-dot dot-tp"></span>True positive</span>
+    <span><span class="legend-dot dot-fn"></span>False negative</span>
+    <span><span class="legend-dot dot-fp"></span>False positive</span>
+    <span><span class="legend-dot dot-tn"></span>True negative</span>
+  </div>
+
+  <div class="matrix">
+    <div class="m-corner">actual →<br>predicted ↓</div>
+    <div class="m-header">Actual YES</div>
+    <div class="m-header">Actual NO</div>
+    <div class="m-header">Pred YES</div>
+    <div class="m-cell tp"><span class="num" id="tp-n">40</span><span class="lbl">TP</span></div>
+    <div class="m-cell fp"><span class="num" id="fp-n">10</span><span class="lbl">FP</span></div>
+    <div class="m-header">Pred NO</div>
+    <div class="m-cell fn"><span class="num" id="fn-n">10</span><span class="lbl">FN</span></div>
+    <div class="m-cell tn"><span class="num" id="tn-n">140</span><span class="lbl">TN</span></div>
+  </div>
+
+  <div class="metrics">
+    <div class="metric"><div class="m-label">Accuracy</div><div class="m-val" id="acc">90.0%</div></div>
+    <div class="metric"><div class="m-label">Precision</div><div class="m-val" id="prec">80.0%</div></div>
+    <div class="metric"><div class="m-label">Recall</div><div class="m-val" id="rec">80.0%</div></div>
+    <div class="metric"><div class="m-label">Specificity</div><div class="m-val" id="spec">93.3%</div></div>
+  </div>
+
+  <div class="insight" id="insight">At threshold 0.50: a balanced tradeoff. 80% of actual defaults are caught (recall), and 80% of flagged loans truly default (precision).</div>
+</div>
+
+<script>
+const N_POS = 50, N_NEG = 150;
+const posScores = [], negScores = [];
+
+function seedRng(s) { return () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; }; }
+const rng = seedRng(42);
+for (let i = 0; i < N_POS; i++) posScores.push(Math.min(1, Math.max(0, 0.65 + (rng() - 0.5) * 0.6)));
+for (let i = 0; i < N_NEG; i++) negScores.push(Math.min(1, Math.max(0, 0.30 + (rng() - 0.5) * 0.5)));
+posScores.sort((a, b) => b - a);
+negScores.sort((a, b) => b - a);
+
+function renderDots(scores, containerId, isPos, threshold) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = '';
+  for (let i = 0; i < scores.length; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot';
+    const predicted = scores[i] >= threshold;
+    if (isPos) d.classList.add(predicted ? 'dot-tp' : 'dot-fn');
+    else d.classList.add(predicted ? 'dot-fp' : 'dot-tn');
+    el.appendChild(d);
+  }
+}
+
+function update() {
+  const t = parseInt(document.getElementById('thresh').value) / 100;
+  document.getElementById('thresh-val').textContent = t.toFixed(2);
+
+  let tp = 0, fn = 0, fp = 0, tn = 0;
+  for (const s of posScores) { if (s >= t) tp++; else fn++; }
+  for (const s of negScores) { if (s >= t) fp++; else tn++; }
+
+  document.getElementById('tp-n').textContent = tp;
+  document.getElementById('fn-n').textContent = fn;
+  document.getElementById('fp-n').textContent = fp;
+  document.getElementById('tn-n').textContent = tn;
+
+  const total = tp + tn + fp + fn;
+  const acc = (tp + tn) / total * 100;
+  const prec = (tp + fp) > 0 ? tp / (tp + fp) * 100 : 0;
+  const rec = (tp + fn) > 0 ? tp / (tp + fn) * 100 : 0;
+  const spc = (tn + fp) > 0 ? tn / (tn + fp) * 100 : 0;
+
+  document.getElementById('acc').textContent = acc.toFixed(1) + '%';
+  document.getElementById('prec').textContent = prec.toFixed(1) + '%';
+  document.getElementById('rec').textContent = rec.toFixed(1) + '%';
+  document.getElementById('spec').textContent = spc.toFixed(1) + '%';
+
+  renderDots(posScores, 'pos-dots', true, t);
+  renderDots(negScores, 'neg-dots', false, t);
+
+  let msg = '';
+  if (t <= 0.15) msg = 'Very low threshold: almost everything is flagged as default. Recall is near 100% but precision collapses — too many false alarms.';
+  else if (t <= 0.35) msg = 'Low threshold: catches most defaults but flags many good loans too. High recall, lower precision.';
+  else if (t <= 0.55) msg = 'Moderate threshold: a balanced tradeoff. ' + rec.toFixed(0) + '% of actual defaults are caught (recall), and ' + prec.toFixed(0) + '% of flagged loans truly default (precision).';
+  else if (t <= 0.75) msg = 'High threshold: only flags loans the model is confident about. Precision rises but recall drops — missing real defaults.';
+  else msg = 'Very high threshold: almost nothing is flagged. Very few false positives, but most actual defaults are missed entirely.';
+
+  document.getElementById('insight').textContent = msg;
+}
+
+update();
+</script>
+</body>
+</html>
